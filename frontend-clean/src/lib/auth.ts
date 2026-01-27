@@ -93,7 +93,6 @@ export const authService = {
     if (!role) return false;
 
     const roleHierarchy: Record<string, number> = {
-      SUPER_ADMIN: 100,
       ADMIN: 80,
       DOCTOR: 60,
       MODERATOR: 50,

@@ -3,12 +3,8 @@
  * All API URLs should use this config instead of hardcoded values
  */
 
-// Get API URL from environment variable, fallback to localhost for development
-export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  (typeof window !== "undefined" && window.location.hostname === "localhost"
-    ? "http://localhost:4000"
-    : "https://api.advanciapayledger.com");
+// Get API URL - CREATOR CONTROL: Localhost only
+export const API_URL = "http://localhost:4000";
 
 // Ensure no trailing slash
 export const API_BASE_URL = API_URL.replace(/\/$/, "");

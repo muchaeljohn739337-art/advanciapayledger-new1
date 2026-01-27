@@ -16,8 +16,20 @@ import {
 
 type Transaction = {
   id: string;
-  amoun 
+  amount: string;
+  currency: string;
+  method: string;
+  status: string;
+  description: string | null;
+  userId: string;
+  metadata?: any;
+  createdAt: string;
+  updatedAt: string;
+};
+
 const transactions: Transaction[] = [];
+
+const router = Router();
 
 function paginate<T>(items: T[], page: number, limit: number) {
   const start = (page - 1) * limit;

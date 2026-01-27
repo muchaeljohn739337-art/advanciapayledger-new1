@@ -1,6 +1,5 @@
 'use client';
 
-import NotificationBell from '@/components/NotificationBell';
 import { authService } from '@/lib/auth';
 import { useSocket } from '@/lib/socket';
 import Link from 'next/link';
@@ -173,7 +172,6 @@ export default function UserDashboard() {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <NotificationBell />
               <button
                 onClick={refreshData}
                 disabled={refreshing}

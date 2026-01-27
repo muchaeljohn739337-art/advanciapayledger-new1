@@ -6,7 +6,7 @@
 "use client";
 
 import { useSecurityAI } from "@/hooks/useSecurityAI";
-import { ThreatLevel } from "@/lib/ai-brain/ai-core.types";
+import { ThreatLevel } from "@/lib/ai-core.types";
 
 /**
  * Real-time Threat Monitor

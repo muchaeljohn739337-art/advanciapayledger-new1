@@ -1,10 +1,8 @@
-/**
- * SMS Pool API Integration
- * Documentation: https://www.smspool.net/api
- */
+// SMS Pool Service - DISABLED BY CREATOR
+// External collaboration access removed - Creator maintains control
 
-const SMSPOOL_API_KEY = process.env.SMSPOOL_API_KEY || "";
-const SMSPOOL_BASE_URL = "https://api.smspool.net";
+const SMSPOOL_API_KEY = ""; // DISABLED - No external access
+const SMSPOOL_BASE_URL = ""; // DISABLED - No external connections
 
 export interface SMSPoolCountry {
   ID: number;

@@ -268,7 +268,8 @@ export const useNotifications = (userId?: string) => {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: process.env.NEXT_PUBLIC_VAPID_KEY,
+        // VAPID key removed - Creator maintains direct control
+        applicationServerKey: "",
       });
 
       const response = await fetch(

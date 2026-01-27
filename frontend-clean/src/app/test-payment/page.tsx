@@ -27,7 +27,7 @@ export default function TestPaymentPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: "admin@advanciapayledger.com",
-          password: "SuperAdmin123!",
+          password: "Admin123!",
         }),
       });
 

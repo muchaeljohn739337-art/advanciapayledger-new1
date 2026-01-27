@@ -48,7 +48,10 @@ export function initializeSentry() {
 
       // Remove sensitive query params
       if (event.request?.query_string) {
-        event.request.query_string = event.request.query_string
+        const queryString = typeof event.request.query_string === 'string' 
+          ? event.request.query_string 
+          : JSON.stringify(event.request.query_string);
+        event.request.query_string = queryString
           .replace(/password=[^&]*/gi, "password=[FILTERED]")
           .replace(/token=[^&]*/gi, "token=[FILTERED]")
           .replace(/api_key=[^&]*/gi, "api_key=[FILTERED]");

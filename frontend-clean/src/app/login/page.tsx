@@ -46,7 +46,6 @@ export default function LoginPage() {
 
       // Role-based redirect
       const roleRoutes = {
-        SUPER_ADMIN: "/admin/dashboard",
         ADMIN: "/admin/dashboard",
         DOCTOR: "/doctor/dashboard",
       };

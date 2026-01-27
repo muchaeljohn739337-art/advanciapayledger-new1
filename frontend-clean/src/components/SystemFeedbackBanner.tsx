@@ -29,7 +29,7 @@ export default function SystemFeedbackBanner() {
     const checkAdminStatus = () => {
       try {
         const userRole = localStorage.getItem("userRole");
-        const isUserAdmin = userRole === "admin" || userRole === "superadmin";
+        const isUserAdmin = userRole === "admin";
         setIsAdmin(isUserAdmin);
       } catch {
         setIsAdmin(false);

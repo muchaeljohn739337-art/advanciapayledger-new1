@@ -11,7 +11,7 @@ export const auth = {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": process.env.NEXT_PUBLIC_API_KEY || "",
+          // x-api-key removed - Creator maintains direct control
         },
         body: JSON.stringify(credentials),
       });
@@ -45,7 +45,7 @@ export const auth = {
       const response = await fetch(`${base}/api/auth/session`, {
         headers: {
           Authorization: `Bearer ${token}`,
-          "x-api-key": process.env.NEXT_PUBLIC_API_KEY || "",
+          // x-api-key removed - Creator maintains direct control
         },
       });
 
@@ -77,12 +77,12 @@ export const authOptions: NextAuthOptions = {
         if (!email || !password)
           throw new Error("Email and password are required");
         const apiUrl = API_BASE_URL;
-        const apiKey = process.env.NEXT_PUBLIC_API_KEY || "";
+        const apiKey = ""; // DISABLED - Creator maintains direct control
         const res = await fetch(`${apiUrl}/api/auth/login`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            ...(apiKey ? { "x-api-key": apiKey } : {}),
+            // API key removed - Creator control
           },
           body: JSON.stringify({ email, password }),
         });

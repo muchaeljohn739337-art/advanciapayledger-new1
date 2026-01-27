@@ -4,8 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { authService } from '@/lib/auth';
-import { useSocket } from '@/lib/socket';
-import NotificationBell from '@/components/NotificationBell';
 
 interface UserData {
   balance: number;
@@ -251,7 +249,6 @@ export default function WithdrawalRequestPage() {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <NotificationBell />
               <Link
                 href="/withdrawal/history"
                 className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition font-semibold"

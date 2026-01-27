@@ -8,7 +8,7 @@ import {
   LoginRiskAssessment,
   SessionRiskAnalysis,
   ThreatLevel,
-} from "@/lib/ai-brain/ai-core.types";
+} from "@/lib/ai-core.types";
 import {
   analyzeSessionSecurity,
   assessLoginRisk,

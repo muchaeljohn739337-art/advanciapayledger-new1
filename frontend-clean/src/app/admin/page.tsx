@@ -72,11 +72,11 @@ export default function AdminPage() {
       color: "from-yellow-600 to-orange-600",
     },
     {
-      href: "/admin/super",
-      title: "Super Admin",
-      description: "Advanced system controls",
+      href: "/admin/users",
+      title: "User Management", 
+      description: "Manage user accounts and approvals",
       icon: Users,
-      color: "from-red-600 to-pink-600",
+      color: "from-blue-600 to-cyan-600",
     },
   ];
 

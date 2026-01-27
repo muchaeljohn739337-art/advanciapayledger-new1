@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { getQueryString } from '../utils/queryHelpers';
 
 const router = Router();
 
@@ -114,14 +115,14 @@ router.get('/:bin', async (req: Request, res: Response) => {
     const { bin } = req.params;
 
     // Validate BIN format
-    if (!bin || bin.length < 6 || !/^\d+$/.test(bin)) {
+    if (!bin || getQueryString(bin).length < 6 || !/^\d+$/.test(getQueryString(bin))) {
       return res.status(400).json({
         valid: false,
         error: 'Invalid BIN format. Please provide at least 6 digits.'
       });
     }
 
-    const binPrefix = bin.substring(0, 6);
+    const binPrefix = getQueryString(bin).substring(0, 6);
 
     // Check if BIN exists in database
     const binInfo = binDatabase[binPrefix];
@@ -131,7 +132,7 @@ router.get('/:bin', async (req: Request, res: Response) => {
     }
 
     // If not in database, return generic info based on first digit (MII)
-    const firstDigit = bin.charAt(0);
+    const firstDigit = getQueryString(bin).charAt(0);
     let brand = 'Unknown';
     let type = 'Unknown';
 

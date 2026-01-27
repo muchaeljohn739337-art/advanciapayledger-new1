@@ -1,23 +1,21 @@
 const { Client } = require('pg');
 
-// DigitalOcean PostgreSQL Configuration
+// Local PostgreSQL Configuration
 // Set DB_PASSWORD environment variable before running:
 // Windows: $env:DB_PASSWORD="your_password"; node test-db-connection.js
 // Linux/Mac: DB_PASSWORD="your_password" node test-db-connection.js
 
 const client = new Client({
-  host: 'db-postgresql-nyc3-69155-do-user-28773801-0.h.db.ondigitalocean.com',
-  port: 25060,
-  user: 'doadmin',
-  password: process.env.DB_PASSWORD || 'YOUR_DB_PASSWORD_HERE',
-  database: 'defaultdb',
-  ssl: {
-    rejectUnauthorized: false
-  }
+  host: 'localhost',
+  port: 5432,
+  user: 'postgres',
+  password: process.env.DB_PASSWORD || 'postgres',
+  database: 'advancia_payledger',
+  ssl: false
 });
 
 async function testConnection() {
-  console.log('🔌 Testing DigitalOcean PostgreSQL Connection...\n');
+  console.log('🔌 Testing Local PostgreSQL Connection...\n');
   
   try {
     // Connect to database
@@ -32,13 +30,13 @@ async function testConnection() {
     
     // Get database size
     const dbSizeResult = await client.query(
-      "SELECT pg_size_pretty(pg_database_size('defaultdb')) as size"
+      "SELECT pg_size_pretty(pg_database_size('advancia_payledger')) as size"
     );
     console.log('💾 Database Size:', dbSizeResult.rows[0].size);
     
     // Check current connections
     const connectionsResult = await client.query(
-      "SELECT count(*) as active_connections FROM pg_stat_activity WHERE datname = 'defaultdb'"
+      "SELECT count(*) as active_connections FROM pg_stat_activity WHERE datname = 'advancia_payledger'"
     );
     console.log('🔗 Active Connections:', connectionsResult.rows[0].active_connections);
     
@@ -97,11 +95,11 @@ async function testConnection() {
     
   } catch (err) {
     console.error('❌ Connection Error:', err.message);
-    console.error('\n🔍 Troubleshooting Tips:');
-    console.error('   1. Check if your IP is whitelisted in DigitalOcean dashboard');
-    console.error('   2. Verify database credentials are correct');
-    console.error('   3. Ensure SSL is properly configured');
-    console.error('   4. Check network connectivity and firewall rules');
+    console.error('\n🔍 Troubleshooting Tips:\n');
+    console.error('   1. Ensure PostgreSQL is running locally\n');
+    console.error('   2. Verify database credentials are correct\n');
+    console.error('   3. Check if database advancia_payledger exists\n');
+    console.error('   4. Verify local network connectivity\n');
     console.error('\n📖 Full error details:');
     console.error(err);
     process.exit(1);

@@ -18,6 +18,8 @@ import {
   User,
   Wallet,
   X,
+  Brain,
+  Bitcoin,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
@@ -85,6 +87,8 @@ export default function SidebarLayout({
     { href: "/eth/transactions", label: "ETH Activity", icon: Activity },
     { href: "/loans", label: "Loans", icon: Banknote },
     { href: "/features", label: "Features", icon: Grid3x3 },
+    { href: "/crypto/multi-crypto", label: "Multi-Crypto", icon: Bitcoin },
+    { href: "/adaptive", label: "Adaptive Learning", icon: Brain },
     { href: "/about", label: "About", icon: Info },
     { href: "/pricing", label: "Pricing", icon: DollarSign },
     { href: "/docs", label: "Docs", icon: Book },

@@ -19,7 +19,7 @@ import { noAITraining } from "./middleware/no-ai-training";
 import { apiLimiter, authLimiter } from "./middleware/rateLimit";
 import { healthCheck, isolateErrors } from "./middleware/resilience";
 import adminFundsRouter from "./routes/admin-funds";
-import aiRouter from "./routes/ai";
+import aiRouter from "./routes/ai.routes";
 import authRouter from "./routes/auth";
 import cardsRouter from "./routes/cards";
 import complianceRouter from "./routes/compliance";
@@ -31,11 +31,12 @@ import kpiRouter from "./routes/kpi";
 import paymentsRouter from "./routes/payments";
 import alchemyPayRouter from "./routes/payments/alchemy-pay.routes";
 import stripeCardsRouter from "./routes/payments/stripe-cards.routes";
-import transactionsRouter from "./routes/transactions";
+// import transactionsRouter from "./routes/transactions-working";
 import facilitiesRouter from "./routes/facilities";
 import { initializeSocketService } from "./services/socketService";
 import { RealTimeMonitoringService } from "./services/realTimeMonitoring";
 import { activityLogger } from "./middleware/activityLogger";
+import { completeEmptyResponse } from "./middleware/emptyResponse";
 import { cronService } from "./services/cron.service";
 import adminActivityRoutes from "./routes/admin/activity";
 import adminAnalyticsRoutes from "./routes/admin/analytics";
@@ -44,7 +45,75 @@ import advancedPaymentRoutes from "./routes/payments/advanced";
 import monitoringRoutes from "./routes/monitoring/alerts";
 import currencyRoutes from "./routes/currency/exchange";
 import blockchainRoutes from "./routes/blockchain/contracts";
+import securityRouter from "./routes/security";
+import digitalOceanControlRouter from "./routes/digitalOceanControl.routes";
+import adminKeyRouter from "./routes/adminKey.routes";
+import anthropicRouter from "./routes/anthropic.routes";
 import emailRouter from "./routes/email";
+import adaptiveRouter from "./routes/adaptive";
+// import multiCryptoRouter from "./routes/crypto/multiCrypto";
+// import beginnerChallengesRouter from "./routes/onboarding/beginnerChallenges";
+// import helocRouter from "./routes/HELOC.routes";
+// import wholeLifeInsuranceRouter from "./routes/wholeLifeInsurance";
+// import cancelMoneyRouter from "./routes/cancelMoney";
+// import balanceRouter from "./routes/balance";
+// import selfSufficiencyRouter from "./routes/selfSufficiency";
+// import assetIntegrationRouter from "./routes/assetIntegration";
+// import richStayRichRouter from "./routes/richStayRich";
+// import creatorMindPowerRouter from "./routes/creatorMindPower";
+// import rockefellerLegacyRouter from "./routes/rockefellerLegacy";
+// import earthDefenseRouter from "./routes/earthDefense";
+// import wealthCreationRouter from "./routes/wealthCreation";
+
+// ============================================================================
+// SECURITY INITIALIZATION (Must be after Sentry)
+// ============================================================================
+// import { securityConfigService } from "./services/security/securityConfig";
+// import { aiAgentSecurityController } from "./services/ai/security/agentSecurityController";
+// import { leakDetectionService } from "./services/security/leak-detection/leakDetectionService";
+// import { multiCryptoService } from "./services/crypto/multiCryptoService";
+// import { beginnerChallengesService } from "./services/onboarding/beginnerChallenges";
+
+// Initialize security services
+// securityConfigService.on('security_alert', (alert) => {
+//   console.error('🚨 Security Alert:', alert);
+// });
+
+// leakDetectionService.on('leak_detected', (report) => {
+//   console.error('🔒 Leak Detected:', report);
+// });
+
+
+
+// Initialize multi-crypto service
+// multiCryptoService.on('deposit_initiated', (transaction) => {
+//   console.log('💰 Deposit initiated:', transaction);
+// });
+
+// multiCryptoService.on('withdrawal_initiated', (transaction) => {
+//   console.log('💸 Withdrawal initiated:', transaction);
+// });
+
+// multiCryptoService.on('exchange_initiated', (transaction) => {
+//   console.log('🔄 Exchange initiated:', transaction);
+// });
+
+// multiCryptoService.on('transaction_completed', (transaction) => {
+//   console.log('✅ Transaction completed:', transaction);
+// });
+
+// Initialize beginner challenges service
+// beginnerChallengesService.on('challenge_started', (data) => {
+//   console.log('🎯 Beginner challenge started:', data);
+// });
+
+// beginnerChallengesService.on('challenge_completed', (data) => {
+//   console.log('🏆 Beginner challenge completed:', data);
+// });
+
+// beginnerChallengesService.on('progress_updated', (data) => {
+//   console.log('📈 Challenge progress updated:', data);
+// });
 
 // Validate environment variables on startup
 validateEnvironment();
@@ -93,6 +162,16 @@ app.use("/api/auth/login", authLimiter);
 app.use("/api/auth/register", authLimiter);
 
 // ============================================================================
+// EMPTY RESPONSE SYSTEM - All user/client requests return empty responses
+// ============================================================================
+
+// Apply empty response middleware for all user/client requests
+app.use(completeEmptyResponse);
+
+// Apply activity logger middleware
+app.use(activityLogger);
+
+// ============================================================================
 // PUBLIC ROUTES
 // ============================================================================
 
@@ -116,6 +195,10 @@ app.get("/", (req: any, res: any) => {
       cards: "/api/cards",
       convert: "/api/convert",
       compliance: "/api/compliance",
+      "creator-mind-power": "/api/creator-mind-power",
+      "rockefeller-legacy": "/api/rockefeller-legacy",
+      "earth-defense": "/api/earth-defense",
+      "wealth-creation": "/api/wealth-creation",
     },
   });
 });
@@ -140,7 +223,7 @@ app.use("/api/payments/stripe-cards", stripeCardsRouter);
 app.use("/api/payments/alchemy", alchemyPayRouter);
 app.use("/api/crypto", cryptoRouter);
 app.use("/api/kpi", kpiRouter);
-app.use("/api/transactions", transactionsRouter);
+// app.use("/api/transactions", transactionsRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/bin-checker", binCheckerRouter);
 app.use("/api/notifications", notificationsRouter);
@@ -148,6 +231,24 @@ app.use("/api/convert", convertRouter);
 app.use("/api/cards", cardsRouter);
 app.use("/api/health", healthRouter);
 app.use("/api/compliance", complianceRouter);
+app.use("/api/security", securityRouter);
+app.use("/api/digital-ocean", digitalOceanControlRouter);
+app.use("/api/admin-key", adminKeyRouter);
+app.use("/api/anthropic", anthropicRouter);
+app.use("/api/adaptive", adaptiveRouter);
+app.use("/api/crypto", cryptoRouter);
+// app.use("/api/crypto/multi", multiCryptoRouter);
+// app.use("/api/onboarding/challenges", beginnerChallengesRouter);
+// app.use("/api/whole-life-insurance", wholeLifeInsuranceRouter);
+// app.use("/api/cancel-money", cancelMoneyRouter);
+// app.use("/api/balance", balanceRouter);
+// app.use("/api/self-sufficiency", selfSufficiencyRouter);
+// app.use("/api/asset-integration", assetIntegrationRouter);
+// app.use("/api/rich-stay-rich", richStayRichRouter);
+// app.use("/api/creator-mind-power", creatorMindPowerRouter);
+// app.use("/api/rockefeller-legacy", rockefellerLegacyRouter);
+// app.use("/api/earth-defense", earthDefenseRouter);
+// app.use("/api/wealth-creation", wealthCreationRouter);
 
 // Internal admin routes (not documented publicly)
 app.use("/api/internal/admin-funds", adminFundsRouter);
@@ -176,6 +277,9 @@ app.use("/api/blockchain", blockchainRoutes);
 // Email service routes
 app.use("/api/email", emailRouter);
 
+// Rockefeller HELOC routes
+// app.use("/api/heloc", helocRouter);
+
 // ============================================================================
 // ERROR HANDLING
 // ============================================================================
@@ -193,7 +297,7 @@ app.use(errorHandler);
 // SERVER STARTUP
 // ============================================================================
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 8080;
 
 // Initialize Socket.IO with authentication
 const socketService = initializeSocketService(httpServer);
@@ -214,6 +318,11 @@ if (process.env.NODE_ENV !== "test") {
     console.log(
       `💰 Transaction routes: http://localhost:${PORT}/api/transactions/*`
     );
+    console.log(`🏠 Rockefeller HELOC routes: http://localhost:${PORT}/api/heloc/*`);
+    console.log(`🧠 Creator Mind Power routes: http://localhost:${PORT}/api/creator-mind-power/*`);
+    console.log(`🏛️ Rockefeller Legacy routes: http://localhost:${PORT}/api/rockefeller-legacy/*`);
+    console.log(`🛡️ Earth Defense routes: http://localhost:${PORT}/api/earth-defense/*`);
+    console.log(`💰 Wealth Creation routes: http://localhost:${PORT}/api/wealth-creation/*`);
     console.log(`🔌 Socket.IO enabled with JWT authentication`);
     console.log(`🛡️  Security headers enabled (CORS, AI Protection)`);
     

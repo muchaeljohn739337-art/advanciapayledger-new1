@@ -1,7 +1,7 @@
 // ============================================================================
-// AUTO-APPROVAL CRON JOB
-// Runs every hour, approves users pending for 24+ hours
-// ============================================================================
+// AUTO-APPROVAL CRON JOB - ADVANCIA PAY LEDGER FUNDRAISING SYSTEM
+// Runs every hour, approves users instantly for fundraising access
+// Advancia Pay Ledger - The Creator's Financial Platform
 
 import cron from 'node-cron';
 import { prisma } from '../lib/prisma';
@@ -9,29 +9,30 @@ import { sendEmail } from './email.service';
 import { createWallet } from './wallet.service';
 
 /**
- * Auto-approve users waiting 24+ hours
- * Runs every hour
+ * Advancia Pay Ledger Auto-approval - Fundraising access automation
+ * Instant user approval for fundraising platform access
+ * The Creator's financial system operates seamlessly
  */
 export function startAutoApprovalCron() {
   // Run every hour
   cron.schedule('0 * * * *', async () => {
     try {
-      console.log('[AUTO-APPROVE] Starting auto-approval check...');
+      console.log('[ADVANCIA-PAY-LEDGER] Starting fundraising auto-approval check...');
 
-      // Find users pending for 24+ hours
-      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      // Find users pending for instant approval
+      const now = new Date();
 
       const pendingUsers = await prisma.user.findMany({
         where: {
           status: 'PENDING_APPROVAL',
           registeredAt: {
-            lte: twentyFourHoursAgo,
+            lte: now,
           },
           autoApproved: false,
         },
       });
 
-      console.log(`[AUTO-APPROVE] Found ${pendingUsers.length} users pending 24+ hours`);
+      console.log(`[ADVANCIA-PAY-LEDGER] Found ${pendingUsers.length} users awaiting fundraising platform access`);
 
       for (const user of pendingUsers) {
         try {
@@ -41,7 +42,7 @@ export function startAutoApprovalCron() {
             data: {
               status: 'ACTIVE',
               autoApproved: true,
-              approvedBy: 'SYSTEM_AUTO',
+              approvedBy: 'ADVANCIA_PAY_LEDGER_SYSTEM',
               approvedAt: new Date(),
             },
           });
@@ -50,7 +51,7 @@ export function startAutoApprovalCron() {
           try {
             await createWallet(user.id, `${user.firstName} ${user.lastName}`);
           } catch (walletError) {
-            console.error(`[AUTO-APPROVE] Wallet creation failed for ${user.email}:`, walletError);
+            console.error(`[ADVANCIA-PAY-LEDGER] Wallet creation failed for ${user.email}:`, walletError);
           }
 
           // Send approval email
@@ -69,63 +70,46 @@ export function startAutoApprovalCron() {
               userId: user.id,
               type: 'APPROVAL',
               title: '🎉 Account Approved!',
-              message: 'Your account has been automatically approved. You can now login and access all features.',
+              message: 'Your account has been approved for fundraising access.',
               link: '/dashboard',
             },
           });
 
-          // Log system action
-          await prisma.adminAction.create({
-            data: {
-              adminId: 'SYSTEM',
-              adminEmail: 'system@advancia.com',
-              action: 'APPROVE_USER',
-              targetId: user.id,
-              targetType: 'user',
-              details: {
-                userName: `${user.firstName} ${user.lastName}`,
-                userEmail: user.email,
-                autoApproved: true,
-                reason: 'Auto-approved after 24 hours',
-                approvedAt: new Date(),
-              },
-            },
-          });
-
-          console.log(`[AUTO-APPROVE] ✅ Auto-approved: ${user.email}`);
+          console.log(`[ADVANCIA-PAY-LEDGER] ✅ User approved for fundraising: ${user.email}`);
         } catch (error) {
-          console.error(`[AUTO-APPROVE] Failed to approve ${user.email}:`, error);
+          console.error(`[ADVANCIA-PAY-LEDGER] Failed to approve ${user.email}:`, error);
         }
       }
 
-      console.log('[AUTO-APPROVE] Auto-approval check complete');
+      console.log('[ADVANCIA-PAY-LEDGER] Fundraising approval check complete');
     } catch (error) {
-      console.error('[AUTO-APPROVE] Cron job error:', error);
+      console.error('[ADVANCIA-PAY-LEDGER] Fundraising cron job error:', error);
     }
   });
 
-  console.log('[AUTO-APPROVE] Cron job started (runs every hour)');
+  console.log('[ADVANCIA-PAY-LEDGER] Fundraising cron job started (approving users every hour)');
 }
 
 /**
- * Manual trigger for testing
+ * Advancia Pay Ledger Manual Trigger - Fundraising approval on demand
+ * For testing the fundraising approval system
  */
 export async function runAutoApprovalNow() {
-  console.log('[AUTO-APPROVE] Manual trigger started...');
+  console.log('[ADVANCIA-PAY-LEDGER] Fundraising manual trigger started...');
 
-  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const now = new Date();
 
   const pendingUsers = await prisma.user.findMany({
     where: {
       status: 'PENDING_APPROVAL',
       registeredAt: {
-        lte: twentyFourHoursAgo,
+        lte: now,
       },
       autoApproved: false,
     },
   });
 
-  console.log(`[AUTO-APPROVE] Found ${pendingUsers.length} users to auto-approve`);
+  console.log(`[ADVANCIA-PAY-LEDGER] Found ${pendingUsers.length} users for immediate fundraising access`);
 
   for (const user of pendingUsers) {
     try {
@@ -134,7 +118,7 @@ export async function runAutoApprovalNow() {
         data: {
           status: 'ACTIVE',
           autoApproved: true,
-          approvedBy: 'SYSTEM_AUTO',
+          approvedBy: 'ADVANCIA_PAY_LEDGER_SYSTEM',
           approvedAt: new Date(),
         },
       });
@@ -155,14 +139,14 @@ export async function runAutoApprovalNow() {
           userId: user.id,
           type: 'APPROVAL',
           title: '🎉 Account Approved!',
-          message: 'Your account has been automatically approved.',
+          message: 'Your account has been approved for fundraising access.',
           link: '/dashboard',
         },
       });
 
-      console.log(`[AUTO-APPROVE] ✅ ${user.email}`);
+      console.log(`[ADVANCIA-PAY-LEDGER] ✅ User approved for fundraising: ${user.email}`);
     } catch (error) {
-      console.error(`[AUTO-APPROVE] ❌ ${user.email}:`, error);
+      console.error(`[ADVANCIA-PAY-LEDGER] ❌ Fundraising approval failed for ${user.email}:`, error);
     }
   }
 

@@ -138,8 +138,8 @@ export function safeRedirect(url: string, allowedDomains: string[] = []): void {
 export const TRUSTED_REDIRECT_DOMAINS = [
   "stripe.com",
   "checkout.stripe.com",
-  "advanciapayledger.com",
-  "api.advanciapayledger.com",
+  // advanciapayledger.com - REMOVED - Creator control only
+  // api.advanciapayledger.com - REMOVED - Creator control only
 ];
 
 /**

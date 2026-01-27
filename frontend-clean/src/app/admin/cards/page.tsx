@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import NotificationBell from '@/components/NotificationBell';
 
 interface Card {
   id: string;
@@ -95,7 +94,6 @@ export default function AdminCardsPage() {
                 </Link>
               </div>
             </div>
-            <NotificationBell />
           </div>
         </div>
       </nav>

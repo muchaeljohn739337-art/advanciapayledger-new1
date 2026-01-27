@@ -6,29 +6,29 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Starting database seeding...");
 
-  // Create Super Admin
-  const adminPassword = await bcrypt.hash("SuperAdmin123!", 12);
+  // Create Admin
+  const adminPassword = await bcrypt.hash("Admin123!", 12);
   const admin = await prisma.user.upsert({
     where: { email: "admin@advanciapayledger.com" },
     update: {
       password: adminPassword,
       status: "ACTIVE",
-      role: "SUPER_ADMIN",
+      role: "ADMIN",
     },
     create: {
       email: "admin@advanciapayledger.com",
       password: adminPassword,
-      name: "Super Admin",
-      firstName: "Super",
-      lastName: "Admin",
+      name: "Admin",
+      firstName: "Admin",
+      lastName: "User",
       status: "ACTIVE",
-      role: "SUPER_ADMIN",
+      role: "ADMIN",
       emailVerified: true,
       kycStatus: "approved",
     },
   });
 
-  console.log("✅ Super Admin created:", admin.email);
+  console.log("✅ Admin created:", admin.email);
 
   // Create active test user
   const userPassword = await bcrypt.hash("TestUser123!", 12);
@@ -83,8 +83,18 @@ async function main() {
     },
     create: {
       userId: admin.id,
-      balance: 10000.0,
-      cryptoAddress: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+      ethereumAddress: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+      polygonAddress: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+      bscAddress: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+      arbitrumAddress: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+      optimismAddress: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+      stellarAddress: "G742D35CC6634C0532925A3B844BC454E4438F44E",
+      ethereumPrivateKey: "private-key-placeholder",
+      polygonPrivateKey: "private-key-placeholder",
+      bscPrivateKey: "private-key-placeholder",
+      arbitrumPrivateKey: "private-key-placeholder",
+      optimismPrivateKey: "private-key-placeholder",
+      stellarPrivateKey: "private-key-placeholder",
     },
   });
 
@@ -95,6 +105,24 @@ async function main() {
     },
     create: {
       userId: testUser.id,
+      ethereumAddress: "0x1234567890123456789012345678901234567890",
+      polygonAddress: "0x1234567890123456789012345678901234567890",
+      bscAddress: "0x1234567890123456789012345678901234567890",
+      arbitrumAddress: "0x1234567890123456789012345678901234567890",
+      optimismAddress: "0x1234567890123456789012345678901234567890",
+      stellarAddress: "G1234567890123456789012345678901234567890",
+      ethereumPrivateKey: "private-key-placeholder",
+      polygonPrivateKey: "private-key-placeholder",
+      bscPrivateKey: "private-key-placeholder",
+      arbitrumPrivateKey: "private-key-placeholder",
+      optimismPrivateKey: "private-key-placeholder",
+      stellarPrivateKey: "private-key-placeholder",
+      ethereumBalance: 1000.0,
+      polygonBalance: 1000.0,
+      bscBalance: 1000.0,
+      arbitrumBalance: 1000.0,
+      optimismBalance: 1000.0,
+      stellarBalance: 1000.0,
       balance: 1000.0,
       cryptoAddress: "0x1234567890123456789012345678901234567890",
     },
@@ -182,7 +210,7 @@ async function main() {
 
   console.log("\n🎉 Database seeding completed successfully!");
   console.log("\n📊 Summary:");
-  console.log(`   - Super Admin: ${admin.email} / SuperAdmin123!`);
+  console.log(`   - Admin: ${admin.email} / Admin123!`);
   console.log(
     `   - Test User: ${testUser.email} / TestUser123! (status: active)`
   );
@@ -190,12 +218,12 @@ async function main() {
     `   - Pending User: ${pendingUser.email} / Pending123! (status: pending)`
   );
   console.log("\n🔑 Test Credentials:");
-  console.log("   Admin Login: admin@advanciapayledger.com / SuperAdmin123!");
+  console.log("   Admin Login: admin@advanciapayledger.com / Admin123!");
   console.log("   User Login: user@test.com / TestUser123!");
   console.log("   Pending (needs approval): pending@test.com / Pending123!");
   console.log("\n💰 Wallet Balances:");
-  console.log(`   - Admin: $${adminWallet.balance}`);
-  console.log(`   - Test User: $${testUserWallet.balance}`);
+  console.log(`   - Admin: $${adminWallet.balance || 10000}`);
+  console.log(`   - Test User: $${testUserWallet.balance || 1000}`);
 }
 
 main()

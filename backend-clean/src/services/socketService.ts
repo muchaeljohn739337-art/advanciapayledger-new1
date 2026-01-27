@@ -238,3 +238,6 @@ export function getSocketService(): SocketService {
   }
   return socketService;
 }
+
+// Export the initializeSocketService function for import in index.ts
+export { initializeSocketService };

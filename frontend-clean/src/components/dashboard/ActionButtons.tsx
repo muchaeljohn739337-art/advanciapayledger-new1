@@ -46,7 +46,7 @@ export default function ActionButtons({
   };
 
   // Check if user has permission (internal check - role not displayed)
-  const hasPermission = userRole === 'SUPER_ADMIN';
+  const hasPermission = userRole === 'ADMIN';
 
   if (loading) {
     return (

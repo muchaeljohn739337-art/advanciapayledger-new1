@@ -8,5 +8,20 @@ declare module 'express-serve-static-core' {
       remaining: number;
       resetTime: Date;
     };
+    clientIP?: string;
+    realIP?: string;
+    geoLocation?: {
+      country?: string;
+      city?: string;
+      region?: string;
+      latitude?: number;
+      longitude?: number;
+    };
+    user?: {
+      id: string;
+      email: string;
+      role: string;
+      status: string;
+    };
   }
 }

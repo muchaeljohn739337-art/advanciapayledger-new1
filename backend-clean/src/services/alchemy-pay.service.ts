@@ -2,15 +2,21 @@ import axios from 'axios';
 import crypto from 'crypto';
 
 export class AlchemyPayService {
-  private apiKey: string;
-  private secretKey: string;
-  private merchantId: string;
+  private apiKey: string = "";
+  private secretKey: string = "";
+  private merchantId: string = "";
   private baseUrl: string = 'https://api.alchemypay.org';
 
   constructor() {
-    this.apiKey = process.env.ALCHEMY_PAY_API_KEY || '';
-    this.secretKey = process.env.ALCHEMY_PAY_SECRET_KEY || '';
-    this.merchantId = process.env.ALCHEMY_PAY_MERCHANT_ID || '';
+    this.apiKey = process.env.ALCHEMY_PAY_API_KEY || "";
+    this.secretKey = process.env.ALCHEMY_PAY_SECRET_KEY || "";
+    this.merchantId = process.env.ALCHEMY_PAY_MERCHANT_ID || "";
+    
+    if (this.apiKey && this.secretKey && this.merchantId) {
+      console.log('✅ Alchemy Pay Service initialized');
+    } else {
+      console.log('⚠️ Alchemy Pay Service not configured - missing credentials');
+    }
   }
 
   /**

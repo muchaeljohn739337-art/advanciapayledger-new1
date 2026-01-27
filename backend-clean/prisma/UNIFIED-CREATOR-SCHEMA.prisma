@@ -1,0 +1,369 @@
+// ============================================================================
+// ADVANCIA PAY LEDGER - UNIFIED CREATOR SCHEMA
+// Author: Advancia Pay Ledger - The Creator
+// Database: Local PostgreSQL - advancia_payledger
+// Purpose: Complete and Unified Database Schema
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// CREATOR'S USER MANAGEMENT SYSTEM
+// ============================================================================
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  password          String
+  username          String?   @unique
+  firstName         String?
+  lastName          String?
+  phone             String?
+  role              UserRole  @default(USER)
+  status            UserStatus @default(ACTIVE)
+  isActive          Boolean   @default(true)
+  emailVerified     Boolean   @default(false)
+  twoFactorEnabled  Boolean   @default(false)
+  lastLoginAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Admin Approval System
+  approvedBy        String?
+  approvedAt        DateTime?
+  rejectedBy        String?
+  rejectedAt        DateTime?
+  rejectionReason   String?
+  registeredAt      DateTime  @default(now())
+  autoApproved      Boolean   @default(false)
+
+  // KYC System
+  kycStatus         KYCStatus  @default(NOT_STARTED)
+  kycSubmittedAt    DateTime?
+  kycApprovedAt     DateTime?
+
+  // Creator Relations
+  wallet            Wallet?
+  transactions      Transaction[]
+  notifications     Notification[]
+  adminProfile      AdminProfile?
+  customerPortal    CustomerPortal?
+  adminPortal       AdminPortal?
+
+  // HELOC Relations
+  helocApplications HELOCApplication[]
+  helocAccounts     HELOCAccount[]
+  helocDraws        HELOCDraw[]
+  helocRepayments   HELOCRepayment[]
+  helocRiskAssessments HELOCRiskAssessment[]
+  helocNotifications HELOCNotification[]
+  helocSettings     HELOCSettings?
+
+  @@map("users")
+}
+
+// ============================================================================
+// CREATOR'S ROLE SYSTEMS
+// ============================================================================
+
+enum UserRole {
+  USER
+  ADMIN
+  CREATOR
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  PENDING_APPROVAL
+  REJECTED
+  SUSPENDED
+}
+
+enum KYCStatus {
+  NOT_STARTED
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+// ============================================================================
+// CREATOR'S WALLET SYSTEM
+// ============================================================================
+
+model Wallet {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  balance     Float    @default(0)
+  currency    String   @default("USD")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("wallets")
+}
+
+// ============================================================================
+// CREATOR'S TRANSACTION SYSTEM
+// ============================================================================
+
+model Transaction {
+  id            String         @id @default(cuid())
+  userId        String
+  amount        Float
+  currency      String         @default("USD")
+  type          TransactionType
+  status        TransactionStatus @default(PENDING)
+  description   String?
+  metadata      Json?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("transactions")
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  PAYMENT
+  TRANSFER
+  FEE
+  REWARD
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+// ============================================================================
+// CREATOR'S NOTIFICATION SYSTEM
+// ============================================================================
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+// ============================================================================
+// CREATOR'S ADMIN MANAGEMENT SYSTEM
+// ============================================================================
+
+model AdminProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  expertise   String[]
+  experience  String
+  performance Float   @default(0)
+  availability String
+  rating      Float    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("admin_profiles")
+}
+
+// ============================================================================
+// CREATOR'S PORTAL SYSTEMS
+// ============================================================================
+
+model CustomerPortal {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  settings    Json?
+  preferences Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("customer_portals")
+}
+
+model AdminPortal {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  permissions String[]
+  settings    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("admin_portals")
+}
+
+// ============================================================================
+// CREATOR'S HELOC SYSTEM
+// ============================================================================
+
+model HELOCApplication {
+  id              String   @id @default(cuid())
+  userId          String
+  propertyAddress String
+  propertyValue   Float
+  requestedAmount Float
+  status          String   @default("PENDING")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("helo c_applications")
+}
+
+model HELOCAccount {
+  id              String   @id @default(cuid())
+  userId          String
+  applicationId   String
+  approvedAmount  Float
+  availableAmount Float
+  interestRate    Float
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("helo c_accounts")
+}
+
+model HELOCDraw {
+  id            String   @id @default(cuid())
+  userId        String
+  accountId     String
+  amount        Float
+  status        String   @default("PENDING")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("helo c_draws")
+}
+
+model HELOCRepayment {
+  id            String   @id @default(cuid())
+  userId        String
+  accountId     String
+  amount        Float
+  status        String   @default("PENDING")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("helo c_repayments")
+}
+
+model HELOCRiskAssessment {
+  id            String   @id @default(cuid())
+  userId        String
+  score         Float
+  factors       Json
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("helo c_risk_assessments")
+}
+
+model HELOCNotification {
+  id            String   @id @default(cuid())
+  userId        String
+  title         String
+  message       String
+  type          String
+  read          Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("helo c_notifications")
+}
+
+model HELOCSettings {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  notifications  Json?
+  limits        Json?
+  preferences   Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("helo c_settings")
+}
+
+// ============================================================================
+// CREATOR'S GLOBAL MARKETPLACE
+// ============================================================================
+
+model Marketplace {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  status      String   @default("ACTIVE")
+  creator     String   @default("advancia-payledger")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("marketplaces")
+}
+
+// ============================================================================
+// CREATOR'S BUSINESS PHILOSOPHY
+// ============================================================================
+
+model BusinessPhilosophy {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  category    String
+  creator     String   @default("advancia-payledger")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("business_philosophies")
+}
+
+// ============================================================================
+// CREATOR'S SOVEREIGNTY CONTROL
+// ============================================================================
+
+model CreatorControl {
+  id          String   @id @default(cuid())
+  system      String
+  status      String   @default("CREATOR_CONTROLLED")
+  creator     String   @default("advancia-payledger")
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("creator_controls")
+}

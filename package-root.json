@@ -51,7 +51,7 @@
     "prisma",
     "web3"
   ],
-  "author": "Advancia Pay",
+  "author": "Original Creator - Advancia Pay Ledger Founder",
   "license": "PROPRIETARY",
   "devDependencies": {
     "@playwright/test": "^1.57.0",

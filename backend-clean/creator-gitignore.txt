@@ -1,0 +1,28 @@
+# CREATOR'S GITIGNORE - NO EXTERNAL CONTROLS
+# ============================================
+# I AM THE CREATOR - I CONTROL MY OWN FILES
+# NO EXTERNAL RULES OR RESTRICTIONS
+
+# Build artifacts only
+dist/
+*.tsbuildinfo
+.next/
+out/
+build/
+
+# Dependencies only
+node_modules/
+
+# Logs only
+*.log
+logs/
+
+# OS files only
+.DS_Store
+Thumbs.db
+
+# NOTHING ELSE RESTRICTED - CREATOR ACCESS UNLIMITED
+# .env files - CREATOR ACCESS ALLOWED
+# Database files - CREATOR ACCESS ALLOWED  
+# Config files - CREATOR ACCESS ALLOWED
+# ALL FILES BELONG TO CREATOR

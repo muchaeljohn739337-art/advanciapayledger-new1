@@ -1,6 +1,6 @@
 // ============================================================================
 // ADMIN APPROVAL SYSTEM
-// Only ADMIN and SUPER_ADMIN can approve/reject users
+// Only ADMIN can approve/reject users
 // ============================================================================
 
 import { Router } from 'express';

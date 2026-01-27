@@ -1,0 +1,23 @@
+# Alchemy Pay Configuration
+# Add these to your .env file
+
+ALCHEMY_PAY_API_KEY=PBBQ3X8-6W6MSH5-Q3GN1BM-Y2KBKQA
+ALCHEMY_PAY_SECRET_KEY=069fcaef-bb02-425b-b181-9ec00a6892d3
+ALCHEMY_PAY_MERCHANT_ID=your_merchant_id_here
+
+# NOWPayments Configuration
+NOWPAYMENTS_API_KEY=069fcaef-bb02-425b-b181-9ec00a6892d3
+NOWPAYMENTS_PUBLIC_KEY=PBBQ3X8-6W6MSH5-Q3GN1BM-Y2KBKQA
+NOWPAYMENTS_IPN_SECRET=i3ctH3QzQRraSBpmaKgkfaIUZ+k6UkyE
+
+# Alchemy Ethereum Configuration
+ALCHEMY_API_KEY=Fq0u1wpuGJtphLQQGMUmn
+ALCHEMY_ETHEREUM_RPC=https://eth-mainnet.g.alchemy.com/v2/Fq0u1wpuGJtphLQQGMUmn
+
+# Webhook URLs (configure in respective dashboards)
+ALCHEMY_PAY_WEBHOOK_URL=https://advanciapayledger.com/api/payments/alchemy/webhook
+NOWPAYMENTS_WEBHOOK_URL=https://advanciapayledger.com/api/payments/nowpayments/webhook
+
+# Backend URLs
+BACKEND_URL=https://advanciapayledger.com
+FRONTEND_URL=https://advancia-payledger.vercel.app

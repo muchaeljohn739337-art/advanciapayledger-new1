@@ -297,6 +297,225 @@ router.post("/webhook", async (req: Request, res: Response) => {
   }
 });
 
+// NOWPayments webhook handler
+router.post("/nowpayments/webhook", async (req: Request, res: Response) => {
+  try {
+    const { getNowPaymentsService } = await import("../services/nowPaymentsService");
+    const nowPayments = getNowPaymentsService();
+    
+    if (!nowPayments) {
+      res.status(503).json({ error: "NOWPayments service not configured" });
+      return;
+    }
+
+    const signature = req.headers["x-nowpayments-sig"] as string;
+    const payload = JSON.stringify(req.body);
+
+    if (!nowPayments.verifyWebhookSignature(payload, signature)) {
+      console.error("Invalid NOWPayments webhook signature");
+      res.status(401).json({ error: "Invalid signature" });
+      return;
+    }
+
+    const event = req.body;
+    console.log("NOWPayments webhook received:", {
+      payment_id: event.payment_id,
+      status: event.payment_status,
+      order_id: event.order_id,
+    });
+
+    // Import and use the same logic as the crypto webhook
+    const { PrismaClient } = await import("@prisma/client");
+    const prisma = new PrismaClient();
+
+    try {
+      const {
+        payment_id,
+        payment_status,
+        pay_amount,
+        pay_currency,
+        price_amount,
+        price_currency,
+        order_id,
+        actually_paid,
+        outcome_amount,
+        outcome_currency,
+        pay_address,
+      } = event;
+
+      // Handle different payment statuses
+      switch (payment_status) {
+        case "finished":
+          console.log("✅ Payment completed:", payment_id);
+          
+          await prisma.$transaction(async (tx: any) => {
+            const wallet = await tx.wallet.findFirst({
+              where: { userId: order_id },
+            });
+
+            if (!wallet) {
+              throw new Error(`Wallet not found for user ${order_id}`);
+            }
+
+            const existingDeposit = await tx.cryptoDeposit.findUnique({
+              where: { txHash: payment_id },
+            });
+
+            if (existingDeposit && existingDeposit.status === "CONFIRMED") {
+              console.log(`Deposit ${payment_id} already processed`);
+              return;
+            }
+
+            const depositAmount = parseFloat(outcome_amount || price_amount);
+            const depositCurrency = outcome_currency || price_currency;
+
+            const deposit = await tx.cryptoDeposit.upsert({
+              where: { txHash: payment_id },
+              update: {
+                status: "CONFIRMED",
+                confirmations: 999,
+                confirmedAt: new Date(),
+                amount: depositAmount,
+                currency: depositCurrency,
+              },
+              create: {
+                walletId: wallet.id,
+                amount: depositAmount,
+                currency: depositCurrency,
+                payCurrency: pay_currency,
+                payAmount: parseFloat(pay_amount),
+                txHash: payment_id,
+                confirmations: 999,
+                status: "CONFIRMED",
+                orderId: order_id,
+                payAddress: pay_address,
+                confirmedAt: new Date(),
+                metadata: event,
+              },
+            });
+
+            const updatedWallet = await tx.wallet.update({
+              where: { id: wallet.id },
+              data: {
+                balance: { increment: depositAmount },
+              },
+            });
+
+            await tx.transaction.create({
+              data: {
+                userId: order_id,
+                walletId: wallet.id,
+                type: "DEPOSIT",
+                amount: depositAmount,
+                currency: depositCurrency,
+                status: "COMPLETED",
+                method: "CRYPTO_USDC",
+                cryptoTxHash: payment_id,
+                metadata: {
+                  payment_id,
+                  pay_amount,
+                  pay_currency,
+                  actually_paid,
+                  outcome_amount,
+                  outcome_currency,
+                },
+              },
+            });
+
+            await tx.notification.create({
+              data: {
+                userId: order_id,
+                type: "transaction",
+                title: "Crypto Deposit Received",
+                message: `Your deposit of ${depositAmount} ${depositCurrency} has been confirmed and credited to your wallet.`,
+                read: false,
+                metadata: {
+                  depositId: deposit.id,
+                  amount: depositAmount,
+                  currency: depositCurrency,
+                },
+              },
+            });
+
+            console.log(
+              `✅ Balance credited: ${depositAmount} ${depositCurrency} to user ${order_id}`
+            );
+          });
+          break;
+
+        case "failed":
+        case "expired":
+          console.log("❌ Payment failed/expired:", payment_id);
+          // Record failed payment
+          const wallet = await prisma.wallet.findFirst({
+            where: { userId: order_id },
+          });
+
+          if (wallet) {
+            await prisma.cryptoDeposit.upsert({
+              where: { txHash: payment_id },
+              update: { status: "FAILED", metadata: event },
+              create: {
+                walletId: wallet.id,
+                amount: parseFloat(price_amount || "0"),
+                currency: price_currency || "USD",
+                payCurrency: pay_currency,
+                payAmount: parseFloat(pay_amount || "0"),
+                txHash: payment_id,
+                status: "FAILED",
+                orderId: order_id,
+                metadata: event,
+              },
+            });
+          }
+          break;
+
+        case "confirming":
+          console.log("⏳ Payment confirming:", payment_id);
+          // Update status to confirming
+          const confirmingWallet = await prisma.wallet.findFirst({
+            where: { userId: order_id },
+          });
+
+          if (confirmingWallet) {
+            await prisma.cryptoDeposit.upsert({
+              where: { txHash: payment_id },
+              update: {
+                status: "CONFIRMING",
+                confirmations: 1,
+                metadata: event,
+              },
+              create: {
+                walletId: confirmingWallet.id,
+                amount: parseFloat(price_amount || "0"),
+                currency: price_currency || "USD",
+                payCurrency: pay_currency,
+                payAmount: parseFloat(pay_amount || "0"),
+                txHash: payment_id,
+                status: "CONFIRMING",
+                confirmations: 1,
+                orderId: order_id,
+                payAddress: pay_address,
+                metadata: event,
+              },
+            });
+          }
+          break;
+
+        default:
+          console.log("ℹ️ Payment status update:", payment_status);
+      }
+    } finally {
+      await prisma.$disconnect();
+    }
+
+    res.json({ received: true });
+  } catch (error: any) {
+    console.error("NOWPayments webhook error:", error);
+    res.status(200).json({ error: "Processing error logged" });
+  }
+});
+
 // Get payment history
 router.get(
   "/history",

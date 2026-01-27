@@ -13,23 +13,6 @@ async function main() {
 
     console.log('👤 Creating admin accounts...');
 
-    const superAdmin = await prisma.user.upsert({
-      where: { email: 'superadmin@advanciapayledger.com' },
-      update: {},
-      create: {
-        email: 'superadmin@advanciapayledger.com',
-        password: await bcrypt.hash('SuperAdmin123!', 10),
-        firstName: 'Super',
-        lastName: 'Admin',
-        name: 'Super Admin',
-        role: 'SUPER_ADMIN',
-        status: 'ACTIVE',
-        isActive: true,
-        emailVerified: true,
-      },
-    });
-    console.log('   ✅ Super Admin:', superAdmin.email);
-
     const admin = await prisma.user.upsert({
       where: { email: 'admin@advanciapayledger.com' },
       update: {},
@@ -47,12 +30,6 @@ async function main() {
     });
     console.log('   ✅ Admin:', admin.email);
 
-    // ============================================
-    // 2. CREATE TEST USERS
-    // ============================================
-
-    console.log('\n👥 Creating test users...');
-
     const testUser = await prisma.user.upsert({
       where: { email: 'user@test.com' },
       update: {},
@@ -68,6 +45,14 @@ async function main() {
         emailVerified: true,
       },
     });
+    console.log('   ✅ Test User:', testUser.email);
+
+    // ============================================
+    // 2. CREATE TEST USERS
+    // ============================================
+
+    console.log('\n👥 Creating test users...');
+
     console.log('   ✅ Active User:', testUser.email);
 
     const pendingUser = await prisma.user.upsert({
@@ -203,18 +188,11 @@ async function main() {
     console.log('='.repeat(60));
 
     console.log('\n📋 TEST CREDENTIALS:\n');
-    console.log('Super Admin (Full Access):');
-    console.log('  Email: superadmin@advanciapayledger.com');
-    console.log('  Password: SuperAdmin123!');
-    console.log('  Role: SUPER_ADMIN');
-    console.log('  Can: Approve withdrawals, manage users, access all features\n');
-
-    console.log('Admin (Limited Admin Access):');
+    console.log('Admin (Full Access):');
     console.log('  Email: admin@advanciapayledger.com');
     console.log('  Password: Admin123!');
     console.log('  Role: ADMIN');
-    console.log('  Can: Approve users, view reports, manage users');
-    console.log('  Cannot: Approve withdrawals, delete users\n');
+    console.log('  Can: Approve users, manage platform, access all features\n');
 
     console.log('Active Test User:');
     console.log('  Email: user@test.com');

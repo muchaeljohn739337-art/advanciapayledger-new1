@@ -82,7 +82,7 @@ router.post('/register', async (req, res) => {
         firstName,
         lastName,
         phone,
-        role: role === 'ADMIN' || role === 'SUPER_ADMIN' ? 'USER' : role, // Prevent self-admin
+        role: role === 'ADMIN' ? 'USER' : role, // Prevent self-admin
         status: 'PENDING_APPROVAL', // CRITICAL: Cannot login yet
         emailVerificationToken: emailToken,
         emailVerified: false,
@@ -104,7 +104,7 @@ router.post('/register', async (req, res) => {
     // Send notification to admins about new registration
     const admins = await prisma.user.findMany({
       where: {
-        role: { in: ['ADMIN', 'SUPER_ADMIN'] },
+        role: 'ADMIN',
         status: 'ACTIVE',
       },
       select: { email: true, firstName: true },

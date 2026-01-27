@@ -12,6 +12,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Datasource moved to prisma.config.ts
+
 // ============================================================================
 // USER MANAGEMENT - WITH ADMIN APPROVAL SYSTEM
 // ============================================================================
@@ -47,6 +49,21 @@ model User {
   kycSubmittedAt DateTime?
   kycApprovedAt DateTime?
   
+  // HELOC Relations
+  helocApplications HELOCApplication[]
+  helocAccounts HELOCAccount[]
+  helocDraws HELOCDraw[]
+  helocRepayments HELOCRepayment[]
+  helocRiskAssessments HELOCRiskAssessment[]
+  helocNotifications HELOCNotification[]
+  helocSettings HELOCSettings?
+  
+  // Whole Life Insurance Relations
+  wholeLifePolicies WholeLifePolicy[]
+  policyBeneficiaries PolicyBeneficiary[]
+  policyRiders PolicyRider[]
+  cancelTransactions CancelTransaction[]
+  
   // Relations
   wallet    Wallet?
   cards     VirtualCard[]
@@ -54,6 +71,15 @@ model User {
   appointments Appointment[]
   bookings  MedicalBooking[]
   notifications Notification[]
+  
+  // Rockefeller Protection Plan & HELOC Relations
+  protectionPlan ProtectionPlan?
+  
+  // Additional relations for missing properties
+  twoFactorSecret String?
+  twoFactorEnabled Boolean @default(false)
+  lastLoginAt DateTime?
+  isActive Boolean @default(true)
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -75,10 +101,10 @@ enum UserStatus {
 enum UserRole {
   USER              // Regular user
   DOCTOR            // Medical professional
+  MODERATOR         // Content moderator
   MEDICAL_STAFF     // Healthcare worker
   FACILITY_ADMIN    // Manages medical facility
-  ADMIN             // Platform admin
-  SUPER_ADMIN       // Full system access (hidden)
+  ADMIN             // Platform admin (highest level)
 }
 
 enum KYCStatus {
@@ -116,18 +142,28 @@ model Wallet {
   stellarPrivateKey   String
   
   // Balances (cached from blockchain)
-  ethereumBalance  Decimal @default(0)
-  polygonBalance   Decimal @default(0)
-  bscBalance       Decimal @default(0)
-  arbitrumBalance  Decimal @default(0)
-  optimismBalance  Decimal @default(0)
-  stellarBalance   Decimal @default(0)
+  ethereumBalance  Float @default(0)
+  polygonBalance   Float @default(0)
+  bscBalance       Float @default(0)
+  arbitrumBalance  Float @default(0)
+  optimismBalance  Float @default(0)
+  stellarBalance   Float @default(0)
   
-  usdValue         Decimal @default(0)
+  // Additional balance field for compatibility
+  balance Float @default(0)
+  
+  // Additional crypto address field
+  cryptoAddress String?
+  
+  usdValue         Float @default(0)
   
   lastSyncedAt     DateTime @default(now())
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+  
+  // Relations for legacy code compatibility
+  cryptoDeposits   CryptoDeposit[]
+  transactions     Transaction[]
   
   @@index([userId])
 }
@@ -147,10 +183,15 @@ model VirtualCard {
   expiryYear    Int
   cvv           String
   
-  balance       Decimal  @default(0)
+  balance       Float  @default(0)
   currency      String   @default("USD")
   
   status        CardStatus @default(ACTIVE)
+  
+  // Additional fields for compatibility
+  stripeCardId String?
+  expiryDate String? // Combined expiry for compatibility
+  last4 String? // Last 4 digits for compatibility
   
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -164,6 +205,10 @@ enum CardStatus {
   FROZEN
   EXPIRED
   CANCELLED
+  active
+  frozen
+  expired
+  cancelled
 }
 
 // ============================================================================
@@ -173,10 +218,12 @@ enum CardStatus {
 model Transaction {
   id              String   @id @default(cuid())
   userId          String
+  // Relations
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallet          Wallet?  @relation(fields: [walletId], references: [id])
   
   type            TransactionType
-  amount          Decimal
+  amount          Float
   currency        String   @default("USD")
   
   // Blockchain details
@@ -184,10 +231,14 @@ model Transaction {
   txHash          String?  @unique
   fromAddress     String?
   toAddress       String?
-  gasUsed         Decimal?
-  gasFee          Decimal?
+  gasUsed         Float?
+  gasFee          Float?
   
   status          TransactionStatus @default(PENDING)
+  
+  // Additional fields for compatibility
+  method String?
+  walletId String?
   
   description     String?
   metadata        Json?
@@ -250,15 +301,19 @@ model MedicalFacility {
   surgicalAvailable    Int @default(0)
   
   // Pricing (USD per day)
-  generalPrice     Decimal
-  icuPrice         Decimal
-  emergencyPrice   Decimal
-  maternityPrice   Decimal
-  pediatricPrice   Decimal
-  surgicalPrice    Decimal
+  generalPrice     Float
+  icuPrice         Float
+  emergencyPrice   Float
+  maternityPrice   Float
+  pediatricPrice   Float
+  surgicalPrice    Float
   
   acceptsCrypto    Boolean @default(true)
   acceptsFiat      Boolean @default(false)
+  
+  // Additional fields for compatibility
+  isActive Boolean @default(true)
+  contactPerson String?
   
   bookings         MedicalBooking[]
   appointments     Appointment[]
@@ -285,8 +340,8 @@ model MedicalBooking {
   checkOutDate    DateTime
   durationDays    Int
   
-  pricePerDay     Decimal
-  totalCost       Decimal
+  pricePerDay     Float
+  totalCost       Float
   
   paymentMethod   String   // crypto or fiat
   paymentCurrency String?  // ETH, USDT, USD, etc.
@@ -319,6 +374,7 @@ enum BookingStatus {
   CONFIRMED
   CHECKED_IN
   CHECKED_OUT
+  COMPLETED
   CANCELLED
 }
 
@@ -352,7 +408,7 @@ model Appointment {
   reason          String
   notes           String?
   
-  cost            Decimal
+  cost            Float
   paymentStatus   PaymentStatus @default(PENDING)
   paymentTxHash   String?
   
@@ -440,6 +496,7 @@ enum NotificationType {
   APPOINTMENT
   PAYMENT
   SECURITY
+  SECURITY_ALERT
 }
 
 // ============================================================================
@@ -487,4 +544,787 @@ model SystemConfig {
   updatedAt       DateTime @updatedAt
   
   @@index([key])
+}
+
+// ============================================================================
+// MISSING MODELS FOR COMPATIBILITY
+// ============================================================================
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  adminId     String?
+  action      String
+  details     Json?
+  ipAddress   String?
+  userAgent   String?
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([userId])
+  @@index([adminId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model UserActivityLog {
+  id          String   @id @default(cuid())
+  userId      String
+  activity    String
+  details     Json?
+  ipAddress   String?
+  userAgent   String?
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([userId])
+  @@index([activity])
+  @@index([createdAt])
+}
+
+model FraudDetectionLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  transactionId String?
+  riskScore   Float
+  riskFactors Json?
+  action      String
+  details     Json?
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([userId])
+  @@index([transactionId])
+  @@index([riskScore])
+  @@index([createdAt])
+}
+
+model BlockchainTransaction {
+  id          String   @id @default(cuid())
+  txHash      String   @unique
+  chain       String
+  fromAddress String
+  toAddress   String
+  amount      Float
+  gasUsed     Float?
+  gasFee      Float?
+  status      String
+  blockNumber Int?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([txHash])
+  @@index([chain])
+  @@index([fromAddress])
+  @@index([toAddress])
+  @@index([status])
+}
+
+model SmartContract {
+  id          String   @id @default(cuid())
+  address     String
+  chain       String
+  name        String?
+  abi         Json?
+  deployedAt  DateTime?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([address])
+  @@index([chain])
+}
+
+model CryptoDeposit {
+  id          String   @id @default(cuid())
+  userId      String
+  walletId    String?
+  chain       String
+  txHash      String   @unique
+  fromAddress String
+  toAddress   String
+  amount      Float
+  currency    String
+  confirmations Int @default(0)
+  status      String
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  wallet      Wallet?  @relation(fields: [walletId], references: [id])
+  
+  @@index([userId])
+  @@index([walletId])
+  @@index([txHash])
+  @@index([status])
+}
+
+model Withdrawal {
+  id          String   @id @default(cuid())
+  userId      String
+  amount      Float
+  currency    String
+  chain       String?
+  toAddress   String
+  status      String
+  adminId     String?
+  processedAt DateTime?
+  txHash      String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model MedBedBooking {
+  id          String   @id @default(cuid())
+  userId      String
+  facilityId  String
+  bedType     String
+  checkInDate DateTime
+  checkOutDate DateTime
+  totalCost   Float
+  status      String
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([facilityId])
+  @@index([status])
+}
+
+model Customer {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  stripeId    String   @unique
+  email       String
+  name        String
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([stripeId])
+}
+
+model Plan {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  stripeId    String   @unique
+  amount      Float
+  currency    String   @default("USD")
+  interval    String
+  features    Json?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([stripeId])
+}
+
+model Subscription {
+  id          String   @id @default(cuid())
+  userId      String
+  customerId  String
+  planId      String
+  stripeId    String   @unique
+  status      String
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  
+  // Relations
+  protectionPlan ProtectionPlan? @relation(fields: [planId], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([customerId])
+  @@index([planId])
+  @@index([status])
+}
+
+model CardTransaction {
+  id          String   @id @default(cuid())
+  cardId      String
+  amount      Float
+  currency    String
+  merchant    String?
+  status      String
+  stripeId    String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([cardId])
+  @@index([status])
+}
+
+// ============================================================================
+// ENUMS FOR ROCKEFELLER PROTECTION PLAN & HELOC
+// ============================================================================
+
+enum PlanType {
+  STANDARD
+  ENHANCED
+  PREMIUM
+}
+
+enum PlanStatus {
+  ACTIVE
+  SUSPENDED
+  CANCELLED
+  EXPIRED
+}
+
+// ============================================================================
+// ROCKEFELLER PROTECTION PLAN - HOME PROTECTION WITH HELOC INTEGRATION
+// ============================================================================
+
+model ProtectionPlan {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  referenceNumber String   @unique
+  
+  // Plan Details
+  planType        PlanType @default(STANDARD)
+  status          PlanStatus @default(ACTIVE)
+  homeValue       Float
+  monthlyExpenses Float
+  
+  // Coverage Details
+  deathBenefit    Float
+  monthlyPremium  Float
+  coverageYears   Int      @default(50)
+  
+  // Trust Information
+  trustName       String?
+  trustEstablished DateTime?
+  
+  // HELOC Integration
+  helocEnabled    Boolean  @default(true)
+  helocMaxLTV     Float    @default(85.0)
+  helocPreferredRate Float  @default(7.0)
+  
+  // Metadata
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  user            User               @relation(fields: [userId], references: [id])
+  helocApplications HELOCApplication[]
+  helocAccounts     HELOCAccount[]
+  subscriptions     Subscription[]
+  
+  @@index([userId])
+  @@index([status])
+  @@index([referenceNumber])
+}
+
+// ============================================================================
+// HELOC INTEGRATION - HOME EQUITY LINE OF CREDIT
+// ============================================================================
+
+model HELOCApplication {
+  id              String   @id @default(cuid())
+  referenceNumber String   @unique
+  protectionPlanId String
+  userId          String
+  
+  // Application Details
+  homeValue       Float
+  requestedAmount Float
+  maxLTV          Float    @default(85)
+  interestRate    Float    @default(7.5)
+  
+  // Status Tracking
+  status          HELOCStatus @default(PENDING)
+  submittedAt     DateTime @default(now())
+  approvedAt      DateTime?
+  rejectedAt      DateTime?
+  rejectionReason String?
+  
+  // Relations
+  riskAssessment  HELOCRiskAssessment?
+  account         HELOCAccount?
+  protectionPlan  ProtectionPlan @relation(fields: [protectionPlanId], references: [id])
+  user            User           @relation(fields: [userId], references: [id])
+  
+  // Metadata
+  ipAddress       String?
+  userAgent       String?
+  documents       Json?     // Uploaded documents
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([protectionPlanId])
+  @@index([userId])
+  @@index([status])
+  @@index([submittedAt])
+}
+
+model HELOCAccount {
+  id                    String   @id @default(cuid())
+  applicationId         String   @unique
+  protectionPlanId      String
+  userId                String
+  
+  // Credit Details
+  creditLimit           Float
+  outstandingBalance    Float    @default(0)
+  availableCredit       Float
+  interestRate          Float
+  
+  // Term Details
+  drawPeriodEndDate     DateTime
+  repaymentPeriodEndDate DateTime
+  
+  // Payment Information
+  monthlyPayment        Float    @default(0)
+  nextPaymentDue        DateTime
+  lastPaymentDate       DateTime?
+  
+  // Status and Controls
+  status                HELOCStatus @default(ACTIVE)
+  trustProtectionEnabled Boolean @default(true)
+  automaticPaymentEnabled Boolean @default(false)
+  
+  // Usage Tracking
+  lastDrawDate          DateTime?
+  totalDraws            Int      @default(0)
+  totalPayments        Float    @default(0)
+  
+  // Relations
+  application           HELOCApplication @relation(fields: [applicationId], references: [id])
+  protectionPlan        ProtectionPlan @relation(fields: [protectionPlanId], references: [id])
+  user                  User           @relation(fields: [userId], references: [id])
+  draws                 HELOCDraw[]
+  payments              HELOCRepayment[]
+  notifications         HELOCNotification[]
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  @@index([applicationId])
+  @@index([protectionPlanId])
+  @@index([userId])
+  @@index([status])
+}
+
+model HELOCDraw {
+  id                String   @id @default(cuid())
+  accountId         String
+  applicationId     String
+  
+  // Draw Details
+  amount            Float
+  purpose           DrawPurpose
+  description       String
+  
+  // Status Tracking
+  status            DrawStatus @default(PENDING)
+  requestedAt       DateTime @default(now())
+  processedAt       DateTime?
+  approvedBy        String?
+  rejectionReason   String?
+  
+  // Compliance
+  counselingRequired Boolean  @default(false)
+  counselingCompleted Boolean @default(false)
+  counselingDate    DateTime?
+  
+  // Documentation
+  documents         Json?    // Supporting documents
+  bankTransferId    String?  // Transfer tracking
+  
+  // Relations
+  account           HELOCAccount @relation(fields: [accountId], references: [id])
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([accountId])
+  @@index([status])
+  @@index([requestedAt])
+  @@index([purpose])
+}
+
+model HELOCRepayment {
+  id              String   @id @default(cuid())
+  accountId       String
+  drawId          String?  // Optional: link to specific draw
+  
+  // Payment Details
+  amount          Float
+  type            RepaymentType
+  paymentDate     DateTime
+  
+  // Payment Method
+  method          PaymentMethod
+  transactionId   String?  // Bank transaction ID
+  
+  // Trust Protection
+  trustCovered     Boolean  @default(false)
+  trustPaymentId  String?  // Reference for trust payments
+  
+  // Processing
+  processedAt     DateTime @default(now())
+  processedBy     String?
+  
+  // Relations
+  account         HELOCAccount @relation(fields: [accountId], references: [id])
+  
+  createdAt       DateTime @default(now())
+  
+  @@index([accountId])
+  @@index([paymentDate])
+  @@index([type])
+  @@index([method])
+}
+
+model HELOCRiskAssessment {
+  id                String   @id @default(cuid())
+  applicationId     String   @unique
+  
+  // Credit Assessment
+  creditScore       Int
+  debtToIncome      Float
+  loanToValue       Float
+  propertyValue     Float
+  
+  // Risk Evaluation
+  marketRisk        RiskLevel @default(MEDIUM)
+  borrowerRisk      RiskLevel @default(MEDIUM)
+  overallRisk       RiskLevel @default(MEDIUM)
+  
+  // Recommendations
+  recommendedLimit  Float
+  recommendedRate   Float
+  recommendedTerms  Json?    // Special terms and conditions
+  
+  // Conditions
+  conditions        Json?    // Required conditions for approval
+  restrictions      Json?    // Usage restrictions
+  
+  // Assessment Metadata
+  assessmentModel   String   @default("ROCKEFELLER-V1")
+  assessorId        String?
+  assessmentDate    DateTime @default(now())
+  
+  // Relations
+  application       HELOCApplication @relation(fields: [applicationId], references: [id])
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([applicationId])
+  @@index([creditScore])
+  @@index([overallRisk])
+  @@index([assessmentDate])
+}
+
+model HELOCNotification {
+  id            String   @id @default(cuid())
+  accountId     String
+  
+  // Notification Details
+  type          HELOCNotificationType
+  title         String
+  message       String
+  priority      NotificationPriority @default(MEDIUM)
+  
+  // Status
+  read          Boolean  @default(false)
+  readAt        DateTime?
+  
+  // Delivery
+  emailSent     Boolean  @default(false)
+  smsSent       Boolean  @default(false)
+  pushSent      Boolean  @default(false)
+  
+  // Action Required
+  actionRequired Boolean  @default(false)
+  actionUrl     String?
+  actionBy      DateTime?
+  
+  // Relations
+  account       HELOCAccount @relation(fields: [accountId], references: [id])
+  
+  createdAt     DateTime @default(now())
+  
+  @@index([accountId])
+  @@index([type])
+  @@index([read])
+  @@index([priority])
+  @@index([createdAt])
+}
+
+model HELOCSettings {
+  id                    String   @id @default(cuid())
+  
+  // Interest Rates
+  baseInterestRate      Float    @default(7.5)
+  preferredRate         Float    @default(7.0)
+  maxRate               Float    @default(15.0)
+  
+  // Loan-to-Value Limits
+  maxLTV                Float    @default(80.0)
+  preferredMaxLTV       Float    @default(85.0)
+  
+  // Fees
+  setupFee              Float    @default(0.0)
+  annualFee             Float    @default(0.0)
+  lateFee               Float    @default(25.0)
+  
+  // Terms
+  drawPeriodYears       Int      @default(15)
+  repaymentPeriodYears  Int      @default(25)
+  
+  // Limits and Controls
+  emergencyDrawLimit    Float    @default(25000.0)
+  counselingThreshold   Float    @default(50000.0)
+  monthlyDrawLimit      Float    @default(0.1) // 10% of credit limit
+  
+  // Risk Settings
+  minCreditScore        Int      @default(680)
+  maxDebtToIncome       Float    @default(0.43)
+  maxLoanToValue        Float    @default(85.0)
+  
+  // Trust Protection
+  trustProtectionEnabled Boolean @default(true)
+  trustPaymentThreshold Float    @default(0.05) // 5% of monthly payment
+  
+  // System Settings
+  active                Boolean  @default(true)
+  version               String   @default("1.0")
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  @@index([active])
+  @@index([version])
+}
+
+enum HELOCStatus {
+  PENDING
+  APPROVED
+  ACTIVE
+  SUSPENDED
+  CLOSED
+  REJECTED
+}
+
+enum DrawPurpose {
+  EMERGENCY
+  HOME_IMPROVEMENT
+  EDUCATION
+  MEDICAL
+  BUSINESS
+  INVESTMENT
+  DEBT_CONSOLIDATION
+  OTHER
+}
+
+enum DrawStatus {
+  PENDING
+  APPROVED
+  PROCESSED
+  REJECTED
+  CANCELLED
+}
+
+enum RepaymentType {
+  MINIMUM_PAYMENT
+  INTEREST_ONLY
+  PRINCIPAL_AND_INTEREST
+  ADDITIONAL_PRINCIPAL
+  TRUST_COVERED
+}
+
+enum PaymentMethod {
+  AUTOMATIC_BANK_TRANSFER
+  TRUST_PAYMENT
+  MANUAL_PAYMENT
+  ONLINE_PAYMENT
+}
+
+// ============================================================================
+// WHOLE LIFE INSURANCE MODELS
+// ============================================================================
+
+model WholeLifePolicy {
+  id              String   @id @default(cuid())
+  policyNumber    String   @unique
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  coverageAmount  Float
+  premium         Float
+  cashValue       Float    @default(0)
+  deathBenefit    Float
+  loanBalance     Float    @default(0)
+  surrenderValue  Float    @default(0)
+  paidUpAdditions Float    @default(0)
+  dividends       Float    @default(0)
+  interestRate    Float    @default(0.045) // 4.5% guaranteed
+  
+  status          PolicyStatus @default(ACTIVE)
+  issueDate       DateTime @default(now())
+  maturityDate    DateTime
+  lastPremiumDate DateTime @default(now())
+  
+  // Relations
+  beneficiaries   PolicyBeneficiary[]
+  riders          PolicyRider[]
+  cancelTransactions CancelTransaction[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([policyNumber])
+  @@index([status])
+}
+
+model PolicyBeneficiary {
+  id              String   @id @default(cuid())
+  policyId        String
+  policy          WholeLifePolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  
+  name            String
+  relationship    String
+  percentage      Float
+  contingent      Boolean  @default(false)
+  dateOfBirth     DateTime
+  contactInfo     String
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([policyId])
+}
+
+model PolicyRider {
+  id              String   @id @default(cuid())
+  policyId        String
+  policy          WholeLifePolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  
+  type            RiderType
+  premium         Float
+  benefit         Float
+  active          Boolean  @default(true)
+  startDate       DateTime @default(now())
+  endDate         DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([policyId])
+}
+
+model CancelTransaction {
+  id              String   @id @default(cuid())
+  policyId        String
+  policy          WholeLifePolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  type            CancelationType
+  amount          Float
+  reason          String
+  date            DateTime @default(now())
+  profitFromCancelation Float
+  riskReduction   Float
+  approvedBy      String
+  
+  createdAt       DateTime @default(now())
+  
+  @@index([policyId])
+  @@index([userId])
+  @@index([type])
+}
+
+enum PolicyStatus {
+  ACTIVE
+  CANCELLED
+  PAID_UP
+  SURRENDERED
+  SUSPENDED
+}
+
+enum RiderType {
+  WAIVER_OF_PREMIUM
+  ACCELERATED_DEATH_BENEFIT
+  LONG_TERM_CARE
+  DISABILITY_WAIVER
+}
+
+enum CancelationType {
+  PREMIUM_CANCELLATION
+  POLICY_CANCELLATION
+  RIDER_CANCELLATION
+  POLICY_LOAN_CANCELLATION
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  VERY_HIGH
+}
+
+enum HELOCNotificationType {
+  DRAW_APPROVED
+  DRAW_PROCESSED
+  PAYMENT_DUE
+  PAYMENT_PROCESSED
+  LIMIT_REACHED
+  RATE_CHANGE
+  ACCOUNT_SUSPENDED
+  COUNSELING_REQUIRED
+  TRUST_INTERVENTION
+  DOCUMENTS_REQUIRED
+  APPLICATION_APPROVED
+  APPLICATION_REJECTED
+}
+
+enum NotificationPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+// Missing models for legacy code compatibility
+model Currency {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  symbol      String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([code])
+  @@index([isActive])
+}
+
+model ExchangeRate {
+  id          String   @id @default(cuid())
+  fromCurrency String
+  toCurrency   String
+  rate         Float
+  source       String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@index([fromCurrency, toCurrency])
+  @@index([createdAt])
 }

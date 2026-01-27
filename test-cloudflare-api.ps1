@@ -1,6 +1,7 @@
 # Test Cloudflare API permissions
-$API_TOKEN = "5tovG0IhoVoeZ2y-fNaEyFkmTBahLJUiIvlhihQ-"
+$API_TOKEN = "YOUR_NEW_TOKEN_HERE" # ⚠️ UPDATE THIS WITH NEW TOKEN
 $ZONE_ID = "0bff66558872c58ed5b8b7942acc34d9"
+$ACCOUNT_ID = "74ecde4d46d4b399c7295cf599d2886b"
 
 $headers = @{
     "Authorization" = "Bearer $API_TOKEN"

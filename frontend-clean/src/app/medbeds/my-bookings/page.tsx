@@ -1,6 +1,5 @@
 'use client';
 
-import NotificationBell from '@/components/NotificationBell';
 import { authService } from '@/lib/auth';
 import { useSocket } from '@/lib/socket';
 import Link from 'next/link';
@@ -196,7 +195,6 @@ export default function MyBookingsPage() {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <NotificationBell />
               <Link
                 href="/medbeds"
                 className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition font-semibold"
