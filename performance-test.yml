@@ -1,0 +1,33 @@
+config:
+  target: 'https://advancia-payledger-backend.advancia-platform.workers.dev'
+  phases:
+    - duration: 60
+      arrivalRate: 10
+    - duration: 120
+      arrivalRate: 50
+    - duration: 60
+      arrivalRate: 10
+
+scenarios:
+  - name: "Health Check"
+    weight: 50
+    flow:
+      - get:
+          url: "/api/health"
+  
+  - name: "AI Chat Endpoint"
+    weight: 30
+    flow:
+      - post:
+          url: "/api/ai/chat"
+          json:
+            message: "Hello, how can you help me?"
+  
+  - name: "Medical Coding"
+    weight: 20
+    flow:
+      - post:
+          url: "/api/ai/medical-coding"
+          json:
+            procedure: "Regular checkup"
+            diagnosis: "Annual physical exam"
