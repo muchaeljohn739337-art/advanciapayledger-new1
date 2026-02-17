@@ -62,7 +62,7 @@ deploy_staging:
   only:
     - develop
 
-# Deploy to Production
+# Deploy to Production (Cloudflare Workers)
 deploy_production:
   stage: deploy
   script:

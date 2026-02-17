@@ -6,20 +6,34 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    // Route handling
-    if (path === '/api/ai/chat') {
+    // Auth endpoints
+    if (path === "/api/auth/register") {
+      return handleRegister(request, env);
+    }
+    if (path === "/api/auth/login") {
+      return handleLogin(request, env);
+    }
+    if (path === "/api/health") {
+      return Response.json({
+        status: "healthy",
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // AI endpoints
+    if (path === "/api/ai/chat") {
       return handleAIChat(request, env);
     }
-    if (path === '/api/ai/medical-coding') {
+    if (path === "/api/ai/medical-coding") {
       return handleMedicalCoding(request, env);
     }
-    if (path === '/api/ai/fraud-detection') {
+    if (path === "/api/ai/fraud-detection") {
       return handleFraudDetection(request, env);
     }
-    if (path === '/api/ai/patient-support') {
+    if (path === "/api/ai/patient-support") {
       return handlePatientSupport(request, env);
     }
-    if (path === '/api/ai/compliance-check') {
+    if (path === "/api/ai/compliance-check") {
       return handleComplianceCheck(request, env);
     }
 
@@ -27,24 +41,24 @@ export default {
     return Response.json({
       message: "Advancia PayLedger AI Services",
       endpoints: [
-        '/api/ai/chat - General AI assistance',
-        '/api/ai/medical-coding - Medical billing codes',
-        '/api/ai/fraud-detection - Payment fraud detection',
-        '/api/ai/patient-support - Patient help desk',
-        '/api/ai/compliance-check - HIPAA compliance'
-      ]
+        "/api/ai/chat - General AI assistance",
+        "/api/ai/medical-coding - Medical billing codes",
+        "/api/ai/fraud-detection - Payment fraud detection",
+        "/api/ai/patient-support - Patient help desk",
+        "/api/ai/compliance-check - HIPAA compliance",
+      ],
     });
-  }
+  },
 };
 
 // 🏥 Medical Coding AI
 async function handleMedicalCoding(request, env) {
   const { procedure, diagnosis } = await request.json();
-  
+
   const medicalPrompt = {
     messages: [
-      { 
-        role: 'system', 
+      {
+        role: "system",
         content: `You are a medical billing expert. Provide accurate CPT and ICD-10 codes.
         Always include:
         - CPT procedure code
@@ -52,46 +66,52 @@ async function handleMedicalCoding(request, env) {
         - Brief description
         - Compliance notes
         
-        Format response as JSON.` 
+        Format response as JSON.`,
       },
-      { 
-        role: 'user', 
-        content: `Procedure: ${procedure || 'routine checkup'}
-        Diagnosis: ${diagnosis || 'annual physical examination'}
+      {
+        role: "user",
+        content: `Procedure: ${procedure || "routine checkup"}
+        Diagnosis: ${diagnosis || "annual physical examination"}
         
-        Provide billing codes and compliance information.` 
-      }
-    ]
+        Provide billing codes and compliance information.`,
+      },
+    ],
   };
 
   try {
-    const response = await env.AI.run('@cf/meta/llama-3-8b-instruct', medicalPrompt);
-    
+    const response = await env.AI.run(
+      "@cf/meta/llama-3-8b-instruct",
+      medicalPrompt,
+    );
+
     return Response.json({
       success: true,
       procedure,
       diagnosis,
       aiResponse: response.response,
       timestamp: new Date().toISOString(),
-      compliance: 'HIPAA compliant processing'
+      compliance: "HIPAA compliant processing",
     });
   } catch (error) {
-    return Response.json({
-      success: false,
-      error: 'AI processing failed',
-      message: error.message
-    }, { status: 500 });
+    return Response.json(
+      {
+        success: false,
+        error: "AI processing failed",
+        message: error.message,
+      },
+      { status: 500 },
+    );
   }
 }
 
 // 🛡️ Fraud Detection AI
 async function handleFraudDetection(request, env) {
   const { transaction } = await request.json();
-  
+
   const fraudPrompt = {
     messages: [
-      { 
-        role: 'system', 
+      {
+        role: "system",
         content: `You are a healthcare payment fraud detection expert.
         Analyze transactions for:
         - Unusual billing patterns
@@ -99,46 +119,52 @@ async function handleFraudDetection(request, env) {
         - Service mismatches
         - Geographic anomalies
         
-        Return risk score (0-100) and analysis.` 
+        Return risk score (0-100) and analysis.`,
       },
-      { 
-        role: 'user', 
+      {
+        role: "user",
         content: `Analyze this healthcare payment transaction:
         ${JSON.stringify(transaction, null, 2)}
         
-        Provide fraud risk assessment and recommendations.` 
-      }
-    ]
+        Provide fraud risk assessment and recommendations.`,
+      },
+    ],
   };
 
   try {
-    const response = await env.AI.run('@cf/meta/llama-3-8b-instruct', fraudPrompt);
-    
+    const response = await env.AI.run(
+      "@cf/meta/llama-3-8b-instruct",
+      fraudPrompt,
+    );
+
     return Response.json({
       success: true,
       transactionId: transaction.id,
       aiAnalysis: response.response,
       riskScore: Math.floor(Math.random() * 30), // Simulated AI risk score
       timestamp: new Date().toISOString(),
-      compliance: 'PCI DSS compliant'
+      compliance: "PCI DSS compliant",
     });
   } catch (error) {
-    return Response.json({
-      success: false,
-      error: 'Fraud detection failed',
-      message: error.message
-    }, { status: 500 });
+    return Response.json(
+      {
+        success: false,
+        error: "Fraud detection failed",
+        message: error.message,
+      },
+      { status: 500 },
+    );
   }
 }
 
 // 🤝 Patient Support AI
 async function handlePatientSupport(request, env) {
   const { query, patientId } = await request.json();
-  
+
   const supportPrompt = {
     messages: [
-      { 
-        role: 'system', 
+      {
+        role: "system",
         content: `You are a helpful healthcare payment assistant.
         Provide information about:
         - Billing inquiries
@@ -147,45 +173,51 @@ async function handlePatientSupport(request, env) {
         - Account questions
         
         Always maintain HIPAA compliance. Never share PHI.
-        Keep responses professional and helpful.` 
+        Keep responses professional and helpful.`,
       },
-      { 
-        role: 'user', 
+      {
+        role: "user",
         content: `Patient inquiry: ${query}
         
-        Provide helpful response while maintaining privacy compliance.` 
-      }
-    ]
+        Provide helpful response while maintaining privacy compliance.`,
+      },
+    ],
   };
 
   try {
-    const response = await env.AI.run('@cf/meta/llama-3-8b-instruct', supportPrompt);
-    
+    const response = await env.AI.run(
+      "@cf/meta/llama-3-8b-instruct",
+      supportPrompt,
+    );
+
     return Response.json({
       success: true,
-      patientId: patientId ? '***-**-****' : 'anonymous',
+      patientId: patientId ? "***-**-****" : "anonymous",
       query,
       aiResponse: response.response,
       timestamp: new Date().toISOString(),
-      compliance: 'HIPAA compliant interaction'
+      compliance: "HIPAA compliant interaction",
     });
   } catch (error) {
-    return Response.json({
-      success: false,
-      error: 'Patient support failed',
-      message: error.message
-    }, { status: 500 });
+    return Response.json(
+      {
+        success: false,
+        error: "Patient support failed",
+        message: error.message,
+      },
+      { status: 500 },
+    );
   }
 }
 
 // 📋 HIPAA Compliance Check AI
 async function handleComplianceCheck(request, env) {
   const { process, data } = await request.json();
-  
+
   const compliancePrompt = {
     messages: [
-      { 
-        role: 'system', 
+      {
+        role: "system",
         content: `You are a HIPAA compliance expert.
         Review healthcare processes for:
         - PHI handling compliance
@@ -193,22 +225,25 @@ async function handleComplianceCheck(request, env) {
         - Security measures
         - Audit trail requirements
         
-        Provide compliance score and recommendations.` 
+        Provide compliance score and recommendations.`,
       },
-      { 
-        role: 'user', 
+      {
+        role: "user",
         content: `Review this healthcare process for HIPAA compliance:
         Process: ${process}
         Data type: ${data}
         
-        Provide compliance assessment and recommendations.` 
-      }
-    ]
+        Provide compliance assessment and recommendations.`,
+      },
+    ],
   };
 
   try {
-    const response = await env.AI.run('@cf/meta/llama-3-8b-instruct', compliancePrompt);
-    
+    const response = await env.AI.run(
+      "@cf/meta/llama-3-8b-instruct",
+      compliancePrompt,
+    );
+
     return Response.json({
       success: true,
       process,
@@ -216,25 +251,106 @@ async function handleComplianceCheck(request, env) {
       complianceAnalysis: response.response,
       complianceScore: Math.floor(Math.random() * 20) + 80, // Simulated 80-100 score
       timestamp: new Date().toISOString(),
-      auditor: 'AI Compliance Assistant'
+      auditor: "AI Compliance Assistant",
     });
   } catch (error) {
-    return Response.json({
-      success: false,
-      error: 'Compliance check failed',
-      message: error.message
-    }, { status: 500 });
+    return Response.json(
+      {
+        success: false,
+        error: "Compliance check failed",
+        message: error.message,
+      },
+      { status: 500 },
+    );
   }
 }
 
-// 💬 General AI Chat
+// � Authentication Handlers
+async function handleRegister(request, env) {
+  try {
+    const { email, password, firstName, lastName, phone } =
+      await request.json();
+
+    // Mock user registration (in production, use proper database)
+    const user = {
+      id: Math.random().toString(36).substr(2, 9),
+      email,
+      firstName,
+      lastName,
+      phone,
+      status: "pending_approval",
+      createdAt: new Date().toISOString(),
+    };
+
+    return Response.json({
+      success: true,
+      message: "Registration successful. Awaiting admin approval.",
+      user,
+    });
+  } catch (error) {
+    return Response.json(
+      {
+        success: false,
+        error: "Registration failed",
+        message: error.message,
+      },
+      { status: 400 },
+    );
+  }
+}
+
+async function handleLogin(request, env) {
+  try {
+    const { email, password } = await request.json();
+
+    // Mock authentication (in production, use proper auth)
+    if (email && password) {
+      const user = {
+        id: "user123",
+        email,
+        firstName: "John",
+        lastName: "Doe",
+        role: "user",
+        status: "active",
+      };
+
+      const token = "mock_jwt_token_" + Math.random().toString(36).substr(2, 9);
+
+      return Response.json({
+        success: true,
+        message: "Login successful",
+        token,
+        user,
+      });
+    } else {
+      return Response.json(
+        {
+          success: false,
+          error: "Invalid credentials",
+        },
+        { status: 401 },
+      );
+    }
+  } catch (error) {
+    return Response.json(
+      {
+        success: false,
+        error: "Login failed",
+        message: error.message,
+      },
+      { status: 400 },
+    );
+  }
+}
+
+// �💬 General AI Chat
 async function handleAIChat(request, env) {
-  const { message, context = 'healthcare payments' } = await request.json();
-  
+  const { message, context = "healthcare payments" } = await request.json();
+
   const chatPrompt = {
     messages: [
-      { 
-        role: 'system', 
+      {
+        role: "system",
         content: `You are an expert healthcare payment processing assistant.
         Specialize in:
         - Medical billing
@@ -243,33 +359,39 @@ async function handleAIChat(request, env) {
         - Healthcare regulations
         - Patient privacy
         
-        Always maintain professional tone and HIPAA compliance.` 
+        Always maintain professional tone and HIPAA compliance.`,
       },
-      { 
-        role: 'user', 
+      {
+        role: "user",
         content: `${message}
         
-        Context: ${context}` 
-      }
-    ]
+        Context: ${context}`,
+      },
+    ],
   };
 
   try {
-    const response = await env.AI.run('@cf/meta/llama-3-8b-instruct', chatPrompt);
-    
+    const response = await env.AI.run(
+      "@cf/meta/llama-3-8b-instruct",
+      chatPrompt,
+    );
+
     return Response.json({
       success: true,
       message,
       context,
       aiResponse: response.response,
       timestamp: new Date().toISOString(),
-      model: '@cf/meta/llama-3-8b-instruct'
+      model: "@cf/meta/llama-3-8b-instruct",
     });
   } catch (error) {
-    return Response.json({
-      success: false,
-      error: 'AI chat failed',
-      message: error.message
-    }, { status: 500 });
+    return Response.json(
+      {
+        success: false,
+        error: "AI chat failed",
+        message: error.message,
+      },
+      { status: 500 },
+    );
   }
 }
