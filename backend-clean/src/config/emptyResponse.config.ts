@@ -6,7 +6,7 @@
 
 export const EMPTY_RESPONSE_CONFIG = {
   // Enable/disable empty response system
-  ENABLED: true,
+  ENABLED: false,
   
   // Paths that should return empty responses
   EMPTY_RESPONSE_PATHS: [
