@@ -10,7 +10,7 @@ echo "🚀 Advancia Pay Ledger VPS Deployment"
 echo "======================================"
 
 # Configuration - UPDATE THESE
-DOMAIN="advanciapayledger.com"
+DOMAIN="advancia.us"
 APP_USER="advancia"
 APP_DIR="/var/www/advancia"
 REPO_URL="git@github.com:muchaeljohn739337-art/advanciapayledger-new1.git"
