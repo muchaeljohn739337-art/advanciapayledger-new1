@@ -149,3 +149,9 @@ backend/.env.production
 # Submodules / Embedded repos
 advanciapayledger-new/
 saas_platform/
+# DigitalOcean deployment
+.do/
+**/.do/
+**/deploy-digitalocean*
+**/deploy-backend-digitalocean*
+deploy-backend-digitalocean.sh
