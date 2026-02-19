@@ -18,6 +18,27 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+
+  // URL redirects for convenience
+  async redirects() {
+    return [
+      {
+        source: '/register',
+        destination: '/auth/register',
+        permanent: true,
+      },
+      {
+        source: '/login',
+        destination: '/auth/login',
+        permanent: true,
+      },
+      {
+        source: '/signup',
+        destination: '/auth/register',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;
