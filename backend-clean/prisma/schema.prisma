@@ -1318,13 +1318,15 @@ enum NotificationPriority {
 
 // Missing models for legacy code compatibility
 model Currency {
-  id        String   @id @default(cuid())
-  code      String   @unique
-  name      String
-  symbol    String
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(cuid())
+  code          String   @unique
+  name          String
+  symbol        String
+  decimalPlaces Int      @default(2)
+  exchangeRate  Float    @default(1)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([code])
   @@index([isActive])
