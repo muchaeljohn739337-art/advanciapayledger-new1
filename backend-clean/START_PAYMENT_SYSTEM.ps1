@@ -28,8 +28,7 @@ Write-Host "`n🔍 Checking payment services..." -ForegroundColor Yellow
 
 $services = @(
     "src/services/stripe.service.ts",
-    "src/services/nowPaymentsService.ts",
-    "src/services/alchemy-pay.service.ts"
+    "src/services/nowPaymentsService.ts"
 )
 
 foreach ($service in $services) {
@@ -66,7 +65,6 @@ Write-Host "`n🚀 Starting backend server..." -ForegroundColor Green
 Write-Host "Payment systems will be available at:" -ForegroundColor Yellow
 Write-Host "  - Stripe: /api/payments/stripe/*" -ForegroundColor Gray
 Write-Host "  - NOWPayments: /api/payments/nowpayments/webhook" -ForegroundColor Gray
-Write-Host "  - Alchemy: Blockchain RPC enabled" -ForegroundColor Gray
 
 Write-Host "`n📧 Webhook URLs to configure:" -ForegroundColor Cyan
 Write-Host "  - NOWPayments: https://advanciapayledger.com/api/payments/nowpayments/webhook" -ForegroundColor White

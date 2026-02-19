@@ -32,7 +32,6 @@ export const SERVER_IPS = {
   WEBHOOK_ENDPOINTS: [
     'https://advanciapayledger.com/api/payments/stripe/webhook',
     'https://advanciapayledger.com/api/payments/nowpayments/webhook',
-    'https://advanciapayledger.com/api/payments/alchemy/webhook',
     'http://134.199.243.224:4000/api/webhooks', // Server webhook endpoint
   ],
 

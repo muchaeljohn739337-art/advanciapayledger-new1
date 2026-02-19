@@ -35,7 +35,6 @@ export class CircuitBreaker {
 export const circuitBreakers = {
   stripe: { getState: () => 'DISABLED', reset: () => {} },
   nowpayments: { getState: () => 'DISABLED', reset: () => {} },
-  alchemy: { getState: () => 'DISABLED', reset: () => {} },
   database: { getState: () => 'DISABLED', reset: () => {} },
   email: { getState: () => 'DISABLED', reset: () => {} },
   sms: { getState: () => 'DISABLED', reset: () => {} },
