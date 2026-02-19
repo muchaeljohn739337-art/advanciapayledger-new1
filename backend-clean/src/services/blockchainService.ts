@@ -215,7 +215,7 @@ export class BlockchainService {
 
       // Check if transaction already exists
       const existingTx = await prisma.blockchainTransaction.findUnique({
-        where: { hash: tx.hash },
+        where: { txHash: tx.hash },
       });
 
       if (existingTx) return;
@@ -232,40 +232,19 @@ export class BlockchainService {
       if (!provider) return;
 
       const block = await provider.getBlock(tx.blockNumber || 0);
-      const timestamp = block ? new Date(block.timestamp * 1000) : new Date();
 
       // Store transaction in database
       await prisma.blockchainTransaction.create({
         data: {
-          hash: tx.hash,
-          from: tx.from,
-          to: tx.to || "",
-          value: tx.value.toString(),
-          gasUsed: receipt.gasUsed.toString(),
-          gasPrice: tx.gasPrice?.toString() || "0",
-          blockNumber: tx.blockNumber ? BigInt(tx.blockNumber) : BigInt(0),
-          blockHash: tx.blockHash || "",
-          transactionIndex: receipt.index || 0,
-          status: receipt.status ? 1 : 0,
-          timestamp: timestamp,
-          network: networkName,
-          contractAddress: receipt.contractAddress || undefined,
-          functionName: this.extractFunctionName(receipt) || undefined,
-          functionParams: this.extractFunctionParams(receipt) || undefined,
-          transactionType: transactionType as
-            | "DEPOSIT"
-            | "WITHDRAWAL"
-            | "PAYMENT"
-            | "CONTRACT_CALL"
-            | "TOKEN_TRANSFER", // Type cast
-          metadata:
-            tx.gasLimit || tx.nonce || tx.data
-              ? {
-                  gasLimit: tx.gasLimit?.toString(),
-                  nonce: tx.nonce,
-                  data: tx.data,
-                }
-              : undefined,
+          txHash: tx.hash,
+          chain: networkName,
+          fromAddress: tx.from,
+          toAddress: tx.to || "",
+          amount: parseFloat(tx.value.toString()) / 1e18, // Convert from wei
+          gasUsed: receipt.gasUsed ? parseFloat(receipt.gasUsed.toString()) : null,
+          gasFee: tx.gasPrice ? parseFloat(tx.gasPrice.toString()) / 1e9 : null, // Convert to Gwei
+          status: receipt.status ? "confirmed" : "failed",
+          blockNumber: tx.blockNumber || null,
         },
       });
 

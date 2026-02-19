@@ -5,7 +5,5 @@
   "buildCommand": "npm run build || echo 'Build completed with warnings'",
   "devCommand": "npm run dev",
   "installCommand": "npm install --legacy-peer-deps",
-  "framework": "nextjs",
-  "outputDirectory": ".next",
-  "nodeVersion": "20.x"
+  "framework": "nextjs"
 }

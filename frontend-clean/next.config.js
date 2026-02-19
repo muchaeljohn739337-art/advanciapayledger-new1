@@ -18,9 +18,6 @@ const nextConfig = {
       process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000",
   },
 
-  // Output as standalone for production (not static export)
-  output: "standalone",
-
   // Image optimization settings
   images: {
     unoptimized: true,
@@ -40,7 +37,5 @@ const nextConfig = {
   // Don't generate static pages that have issues
   staticPageGenerationTimeout: 0,
 };
-
-module.exports = nextConfig;
 
 module.exports = nextConfig;
