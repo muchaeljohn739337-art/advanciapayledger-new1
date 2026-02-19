@@ -127,14 +127,42 @@ router.post("/login", async (req: Request, res: Response) => {
       return;
     }
 
-    // Check if user is active and verified
-    if (!user.isActive) {
+    // Check user status for admin approval
+    if (user.status === "PENDING_APPROVAL") {
+      res.status(403).json({ 
+        error: "Your account is pending admin approval. You'll receive an email once approved.",
+        code: "PENDING_APPROVAL"
+      });
+      return;
+    }
+
+    if (user.status === "REJECTED") {
+      res.status(403).json({ 
+        error: "Your account registration was not approved. Please contact support.",
+        code: "REJECTED"
+      });
+      return;
+    }
+
+    if (user.status === "SUSPENDED") {
+      res.status(403).json({ 
+        error: "Your account has been suspended. Please contact support.",
+        code: "SUSPENDED"
+      });
+      return;
+    }
+
+    if (user.status !== "ACTIVE") {
       res.status(403).json({ error: "Account not active" });
       return;
     }
 
+    // Check if email is verified
     if (!user.emailVerified) {
-      res.status(403).json({ error: "Email not verified" });
+      res.status(403).json({ 
+        error: "Please verify your email address. Check your inbox for the verification link.",
+        code: "EMAIL_NOT_VERIFIED"
+      });
       return;
     }
 
