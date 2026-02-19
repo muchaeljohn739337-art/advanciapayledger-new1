@@ -34,6 +34,16 @@
     "prisma/**/*",
     "scripts/**/*",
     "tests/**/*",
-    "src/services/blockchainListener.ts"
+    "src/scripts/**/*",
+    "src/services/blockchainListener.ts",
+    "src/services/AdvancedRealityService.ts",
+    "src/services/CancelMoneyService.ts",
+    "src/services/RobotDesignService.ts",
+    "src/creator-sovereign-server.ts",
+    "src/middleware/text-agent-auth.middleware.ts",
+    "src/routes/advancedReality.ts",
+    "src/routes/ai-auth.routes.ts",
+    "src/routes/model-download.routes.ts",
+    "src/routes/route-testing.routes.ts"
   ]
 }
