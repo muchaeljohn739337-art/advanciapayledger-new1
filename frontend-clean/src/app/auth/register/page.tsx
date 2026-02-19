@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -155,9 +154,7 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+      <div
         className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 w-full max-w-2xl border border-white/20"
       >
         {/* Header */}
@@ -200,11 +197,7 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit}>
           {/* Step 1: Account Credentials */}
           {step === 1 && (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="space-y-4"
-            >
+            <div className="space-y-4">
               <h2 className="text-xl font-semibold text-white mb-4">Account Credentials</h2>
               
               <div>
@@ -245,16 +238,12 @@ export default function RegisterPage() {
                   required
                 />
               </div>
-            </motion.div>
+            </div>
           )}
 
           {/* Step 2: Personal Information */}
           {step === 2 && (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="space-y-4"
-            >
+            <div className="space-y-4">
               <h2 className="text-xl font-semibold text-white mb-4">Personal Information</h2>
               
               <div className="grid grid-cols-2 gap-4">
@@ -306,16 +295,12 @@ export default function RegisterPage() {
                   placeholder="+1 234 567 8900"
                 />
               </div>
-            </motion.div>
+            </div>
           )}
 
-          {/* Step 3: Address Information */}
+          {/* Step 3: Address */}
           {step === 3 && (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="space-y-4"
-            >
+            <div className="space-y-4">
               <h2 className="text-xl font-semibold text-white mb-4">Address Information</h2>
               
               <div>
@@ -379,16 +364,12 @@ export default function RegisterPage() {
                   />
                 </div>
               </div>
-            </motion.div>
+            </div>
           )}
 
-          {/* Step 4: Terms & Agreements */}
+          {/* Step 4: Agreements */}
           {step === 4 && (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="space-y-4"
-            >
+            <div className="space-y-4">
               <h2 className="text-xl font-semibold text-white mb-4">Terms & Agreements</h2>
               
               <div className="space-y-4 bg-white/5 p-6 rounded-lg border border-white/10">
@@ -458,7 +439,7 @@ export default function RegisterPage() {
                   </div>
                 </div>
               </div>
-            </motion.div>
+            </div>
           )}
 
           {/* Navigation Buttons */}
@@ -502,7 +483,7 @@ export default function RegisterPage() {
             </Link>
           </p>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }
