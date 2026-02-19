@@ -5,6 +5,7 @@
 ### **🔧 Admin Key Configuration:**
 
 #### **Environment Variables Added:**
+
 ```bash
 # Admin Keys (Production & Development)
 ADMIN_API_KEY=YOUR_ADMIN_API_KEY_HERE
@@ -15,6 +16,7 @@ SYSTEM_ADMIN_KEY=YOUR_SYSTEM_ADMIN_KEY_HERE
 ### **🛡️ Admin Key Service Created:**
 
 #### **Admin Key Service (`adminKey.service.ts`)**
+
 - ✅ **Key Verification:** Validate admin keys
 - ✅ **Permission Levels:** Admin, Super Admin, System Admin
 - ✅ **Token Generation:** Generate admin JWT tokens
@@ -22,6 +24,7 @@ SYSTEM_ADMIN_KEY=YOUR_SYSTEM_ADMIN_KEY_HERE
 - ✅ **Action Logging:** Log all admin actions
 
 #### **Admin Authentication Middleware (`adminAuth.ts`)**
+
 - ✅ **Key Authentication:** Verify admin keys
 - ✅ **Level Requirements:** Require specific admin levels
 - ✅ **Permission Requirements:** Require specific permissions
@@ -31,6 +34,7 @@ SYSTEM_ADMIN_KEY=YOUR_SYSTEM_ADMIN_KEY_HERE
 ### **🌐 Admin API Endpoints:**
 
 #### **Authentication Endpoints:**
+
 ```bash
 # Admin Key Status
 GET /api/admin-key/status
@@ -49,6 +53,7 @@ Headers: X-Admin-Token: [admin-token]
 ```
 
 #### **Dashboard Endpoints:**
+
 ```bash
 # Admin Dashboard (Admin Level)
 GET /api/admin-key/dashboard
@@ -64,6 +69,7 @@ Headers: X-Admin-Key: [admin-key]
 ```
 
 #### **Management Endpoints:**
+
 ```bash
 # User Management (Super Admin+)
 GET /api/admin-key/users
@@ -89,6 +95,7 @@ Headers: X-Admin-Key: [admin-key]
 ### **🔐 Admin Permission Levels:**
 
 #### **ADMIN Level:**
+
 ```json
 {
   "level": "ADMIN",
@@ -103,6 +110,7 @@ Headers: X-Admin-Key: [admin-key]
 ```
 
 #### **SUPER_ADMIN Level:**
+
 ```json
 {
   "level": "SUPER_ADMIN",
@@ -124,6 +132,7 @@ Headers: X-Admin-Key: [admin-key]
 ```
 
 #### **SYSTEM_ADMIN Level:**
+
 ```json
 {
   "level": "SYSTEM_ADMIN",
@@ -136,6 +145,7 @@ Headers: X-Admin-Key: [admin-key]
 ### **🚀 Usage Examples:**
 
 #### **Admin Authentication:**
+
 ```bash
 # Authenticate with admin key
 curl -X POST http://localhost:4000/api/admin-key/authenticate \
@@ -147,6 +157,7 @@ curl -X POST http://localhost:4000/api/admin-key/generate-token \
 ```
 
 #### **Access Admin Dashboard:**
+
 ```bash
 # Admin Dashboard
 curl -X GET http://localhost:4000/api/admin-key/dashboard \
@@ -162,6 +173,7 @@ curl -X GET http://localhost:4000/api/admin-key/system-dashboard \
 ```
 
 #### **System Control:**
+
 ```bash
 # Full System Control (System Admin)
 curl -X GET http://localhost:4000/api/admin-key/system-control \
@@ -171,6 +183,7 @@ curl -X GET http://localhost:4000/api/admin-key/system-control \
 ### **🔧 Integration Examples:**
 
 #### **Protect Admin Routes:**
+
 ```typescript
 import { authenticateAdminKey, requireSuperAdmin } from '../middleware/adminAuth';
 
@@ -191,6 +204,7 @@ router.get('/system-control', authenticateAdminKey, requireSystemAdmin, (req, re
 ```
 
 #### **Permission-Based Access:**
+
 ```typescript
 import { requirePermission } from '../middleware/adminAuth';
 
@@ -203,7 +217,7 @@ router.get('/payments', authenticateAdminKey, requirePermission('manage_payments
 ### **📊 Admin Key Status:**
 
 | Feature | Status | Configuration |
-|---------|--------|----------------|
+| ------- | ------ | ------------- |
 | **Admin Key** | ✅ Configured | `sk-ant-admin01-...` |
 | **Super Admin Key** | ✅ Configured | `sk-ant-admin01-...` |
 | **System Admin Key** | ✅ Configured | `sk-ant-admin01-...` |
@@ -217,12 +231,14 @@ router.get('/payments', authenticateAdminKey, requirePermission('manage_payments
 ### **🔐 Security Features:**
 
 #### **Authentication Methods:**
+
 - ✅ **Header Authentication:** `X-Admin-Key` header
 - ✅ **Bearer Token:** `Authorization: Bearer [key]` header
 - ✅ **JWT Tokens:** Generated admin tokens
 - ✅ **Permission Levels:** Admin, Super Admin, System Admin
 
 #### **Security Measures:**
+
 - ✅ **Key Validation:** Verify admin keys
 - ✅ **Permission Checking:** Check specific permissions
 - ✅ **Action Logging:** Log all admin actions
@@ -233,6 +249,7 @@ router.get('/payments', authenticateAdminKey, requirePermission('manage_payments
 ### **🎯 Admin Capabilities:**
 
 #### **Admin Level:**
+
 - ✅ **View Dashboard:** Access admin dashboard
 - ✅ **Read Users:** View user information
 - ✅ **Read Transactions:** View transaction data
@@ -240,6 +257,7 @@ router.get('/payments', authenticateAdminKey, requirePermission('manage_payments
 - ✅ **Manage Profile:** Update own profile
 
 #### **Super Admin Level:**
+
 - ✅ **All Admin Features:** All admin level capabilities
 - ✅ **User Management:** Create, update, delete users
 - ✅ **Transaction Management:** Full transaction control
@@ -248,6 +266,7 @@ router.get('/payments', authenticateAdminKey, requirePermission('manage_payments
 - ✅ **System Settings:** Modify system configuration
 
 #### **System Admin Level:**
+
 - ✅ **All Super Admin Features:** All super admin capabilities
 - ✅ **Full System Control:** Complete system access
 - ✅ **Database Control:** Full database access
@@ -260,6 +279,7 @@ router.get('/payments', authenticateAdminKey, requirePermission('manage_payments
 **🔑 Admin key `YOUR_ADMIN_KEY_HERE` is now fully configured!**
 
 **The admin key provides:**
+
 - ✅ **Admin Level Access:** Basic admin operations
 - ✅ **Super Admin Access:** Advanced admin operations
 - ✅ **System Admin Access:** Complete system control
