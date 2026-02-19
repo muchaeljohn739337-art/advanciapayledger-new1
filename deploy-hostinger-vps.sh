@@ -10,7 +10,7 @@ echo "🚀 Advancia Pay Ledger VPS Deployment"
 echo "======================================"
 
 # Configuration - UPDATE THESE
-DOMAIN="advancia.us"
+DOMAIN="api.advanciapayledger.com"
 APP_USER="advancia"
 APP_DIR="/var/www/advancia"
 REPO_URL="git@github.com:muchaeljohn739337-art/advanciapayledger-new1.git"
@@ -132,7 +132,7 @@ ALCHEMY_PAY_API_KEY=YOUR_ALCHEMY_API_KEY
 
 # App URLs
 APP_URL=https://${DOMAIN}
-CORS_ORIGINS=https://${DOMAIN},https://www.${DOMAIN}
+CORS_ORIGINS=https://advanciapayledger.com,https://www.advanciapayledger.com,https://${DOMAIN}
 EOF
 
 chown ${APP_USER}:${APP_USER} ${APP_DIR}/app/backend-clean/.env
@@ -193,7 +193,7 @@ log "Configuring Nginx..."
 cat > /etc/nginx/sites-available/advancia <<EOF
 server {
     listen 80;
-    server_name ${DOMAIN} www.${DOMAIN};
+    server_name ${DOMAIN};
 
     location / {
         proxy_pass http://127.0.0.1:3000;
@@ -234,7 +234,7 @@ nginx -t && systemctl restart nginx
 # 10. Setup SSL with Let's Encrypt
 # ============================================================================
 log "Setting up SSL certificate..."
-certbot --nginx -d ${DOMAIN} -d www.${DOMAIN} --non-interactive --agree-tos -m admin@${DOMAIN} || {
+certbot --nginx -d ${DOMAIN} --non-interactive --agree-tos -m admin@advanciapayledger.com || {
   warn "SSL setup failed. Run manually: certbot --nginx -d ${DOMAIN}"
 }
 

@@ -1,12 +1,12 @@
 // ============================================================================
-// RESEND EMAIL SERVICE
+// POSTMARK EMAIL SERVICE
 // All email notifications for the platform
 // ============================================================================
 
-import { Resend } from 'resend';
+import * as postmark from 'postmark';
 import { prisma } from '../lib/prisma';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const postmarkClient = new postmark.ServerClient(process.env.POSTMARK_API_KEY || '');
 
 interface EmailData {
   to: string;
@@ -15,17 +15,18 @@ interface EmailData {
 }
 
 /**
- * Send email using Resend
+ * Send email using Postmark
  */
 export async function sendEmail({ to, template, data }: EmailData) {
   try {
     const emailContent = getEmailTemplate(template, data);
 
-    const result = await resend.emails.send({
-      from: process.env.EMAIL_FROM || 'Advancia <noreply@advancia.com>',
-      to,
-      subject: emailContent.subject,
-      html: emailContent.html,
+    const result = await postmarkClient.sendEmail({
+      From: process.env.EMAIL_FROM || 'admin@advanciapayledger.com',
+      To: to,
+      Subject: emailContent.subject,
+      HtmlBody: emailContent.html,
+      MessageStream: 'outbound',
     });
 
     // Log email
@@ -34,7 +35,7 @@ export async function sendEmail({ to, template, data }: EmailData) {
         to,
         subject: emailContent.subject,
         template,
-        resendId: result.data?.id,
+        messageId: result.MessageID,
         status: 'SENT',
       },
     });

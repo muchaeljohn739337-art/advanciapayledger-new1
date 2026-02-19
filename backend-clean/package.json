@@ -5,8 +5,8 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "engines": {
-    "node": "24.x",
-    "npm": ">=10.0.0"
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   },
   "scripts": {
     "dev": "cross-env NODE_ENV=development ts-node-dev --respawn --transpile-only src/index.ts",
@@ -71,7 +71,6 @@
     "postmark": "^4.0.5",
     "prisma": "5.22.0",
     "qrcode": "^1.5.4",
-    "resend": "^6.7.0",
     "socket.io": "^4.8.3",
     "speakeasy": "^2.0.0",
     "stripe": "^20.1.0",

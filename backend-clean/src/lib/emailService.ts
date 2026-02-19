@@ -1,9 +1,8 @@
 import nodemailer from "nodemailer";
 import postmark from "postmark";
-import { Resend } from "resend";
 
 // Email service types
-export type EmailProvider = "postmark" | "resend" | "zoho" | "smtp";
+export type EmailProvider = "postmark" | "zoho" | "smtp";
 
 export interface EmailConfig {
   from: string;
@@ -27,7 +26,6 @@ export interface EmailResponse {
 
 class EmailService {
   private postmarkClient?: postmark.ServerClient;
-  private resendClient?: Resend;
   private smtpTransporter?: nodemailer.Transporter;
 
   constructor() {
@@ -41,12 +39,6 @@ class EmailService {
         process.env.POSTMARK_API_KEY
       );
       console.log("✅ Postmark client initialized");
-    }
-
-    // Initialize Resend
-    if (process.env.RESEND_API_KEY) {
-      this.resendClient = new Resend(process.env.RESEND_API_KEY);
-      console.log("✅ Resend client initialized");
     }
 
     // Initialize SMTP (Zoho/Gmail)
@@ -100,7 +92,6 @@ class EmailService {
   private getProviderOrder(preferred?: EmailProvider): EmailProvider[] {
     const allProviders: EmailProvider[] = [
       "postmark",
-      "resend",
       "zoho",
       "smtp",
     ];
@@ -110,7 +101,7 @@ class EmailService {
       return [preferred, ...allProviders.filter((p) => p !== preferred)];
     }
 
-    // Default order: Postmark -> Resend -> Zoho/SMTP
+    // Default order: Postmark -> Zoho/SMTP
     return allProviders;
   }
 
@@ -121,8 +112,6 @@ class EmailService {
     switch (provider) {
       case "postmark":
         return this.sendViaPostmark(config);
-      case "resend":
-        return this.sendViaResend(config);
       case "zoho":
       case "smtp":
         return this.sendViaSMTP(config);
@@ -157,42 +146,6 @@ class EmailService {
       success: result.MessageID !== undefined,
       messageId: result.MessageID,
       provider: "postmark",
-    };
-  }
-
-  private async sendViaResend(config: EmailConfig): Promise<EmailResponse> {
-    if (!this.resendClient) {
-      throw new Error("Resend client not initialized");
-    }
-
-    const emailData = {
-      from: config.from,
-      to: Array.isArray(config.to) ? config.to : [config.to],
-      subject: config.subject,
-      html: config.html,
-      text: config.text,
-      attachments: config.attachments?.map((att) => ({
-        filename: att.filename,
-        content:
-          att.content instanceof Buffer
-            ? att.content.toString("base64")
-            : Buffer.from(att.content).toString("base64"),
-        type: att.contentType || "application/octet-stream",
-      })),
-    };
-
-    const { data, error } = await this.resendClient.emails.send(
-      emailData as any
-    );
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    return {
-      success: true,
-      messageId: data?.id,
-      provider: "resend",
     };
   }
 
@@ -253,20 +206,6 @@ class EmailService {
       }
     }
 
-    // Test Resend
-    if (this.resendClient) {
-      try {
-        await this.sendViaResend(testConfig);
-        results.push({ provider: "resend", status: "success" });
-      } catch (error) {
-        results.push({
-          provider: "resend",
-          status: "error",
-          message: error instanceof Error ? error.message : "Unknown error",
-        });
-      }
-    }
-
     // Test SMTP/Zoho
     if (this.smtpTransporter) {
       try {
@@ -296,10 +235,6 @@ class EmailService {
         configured: !!this.postmarkClient,
         apiKey: !!process.env.POSTMARK_API_KEY,
         serverId: process.env.POSTMARK_SERVER_ID,
-      },
-      resend: {
-        configured: !!this.resendClient,
-        apiKey: !!process.env.RESEND_API_KEY,
       },
       smtp: {
         configured: !!this.smtpTransporter,

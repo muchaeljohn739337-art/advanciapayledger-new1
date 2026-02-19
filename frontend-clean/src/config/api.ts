@@ -30,7 +30,6 @@ export const EXTERNAL_URLS = {
   DISCORD: "https://discord.com",
   TELEGRAM: "https://t.me",
   WHATSAPP: "https://wa.me",
-  RESEND_API: "https://api.resend.com",
 } as const;
 
 // App URLs
