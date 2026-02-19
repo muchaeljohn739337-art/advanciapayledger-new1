@@ -327,7 +327,7 @@ if (process.env.NODE_ENV !== "test") {
     console.log(`🛡️  Security headers enabled (CORS, AI Protection)`);
     
     // Start cron services
-    cronService.start();
+    cronService.startAll();
     console.log(`⏰ Cron services initialized`);
   });
 }
