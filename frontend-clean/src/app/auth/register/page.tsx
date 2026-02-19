@@ -140,8 +140,8 @@ export default function RegisterPage() {
       const data = await response.json();
 
       if (data.success) {
-        // Redirect to pending approval page
-        window.location.href = "/auth/pending-approval";
+        // Redirect to registration success page with email
+        window.location.href = `/auth/registration-success?email=${encodeURIComponent(formData.email)}`;
       } else {
         setError(data.error || "Registration failed");
       }
