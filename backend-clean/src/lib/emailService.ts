@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import postmark from "postmark";
+import * as postmark from "postmark";
 
 // Email service types
 export type EmailProvider = "postmark" | "zoho" | "smtp";
