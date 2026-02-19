@@ -74,7 +74,7 @@ export class BlockchainService {
       chainId: 1,
       rpcUrl:
         process.env.ETHEREUM_RPC_URL ||
-        "https://mainnet.infura.io/v3/YOUR_PROJECT_ID",
+        "https://ethereum-rpc.publicnode.com",
       explorerUrl: "https://etherscan.io",
       nativeCurrency: "ETH",
       blockTime: 12000,
@@ -83,7 +83,7 @@ export class BlockchainService {
     {
       name: "Polygon Mainnet",
       chainId: 137,
-      rpcUrl: process.env.POLYGON_RPC_URL || "https://polygon-rpc.com",
+      rpcUrl: process.env.POLYGON_RPC_URL || "https://polygon-bor-rpc.publicnode.com",
       explorerUrl: "https://polygonscan.com",
       nativeCurrency: "MATIC",
       blockTime: 2000,

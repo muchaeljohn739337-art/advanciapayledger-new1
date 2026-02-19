@@ -41,9 +41,10 @@ export class CurrencyService {
   private exchangeRates: Map<string, number> = new Map();
   private supportedCurrencies: Map<string, Currency> = new Map();
   private lastRateUpdate: Date = new Date();
-  private readonly UPDATE_INTERVAL = 5 * 60 * 1000; // 5 minutes
-  private readonly EXCHANGE_RATE_API = "https://api.exchangerate.host/latest";
-  private readonly BACKUP_API = "https://api.frankfur.com/v1/latest";
+  private readonly UPDATE_INTERVAL = 30 * 60 * 1000; // 30 minutes (reduced frequency)
+  private readonly EXCHANGE_RATE_API = "https://api.frankfurter.app/latest";
+  private readonly BACKUP_API = "https://open.er-api.com/v6/latest/USD";
+  private rateFetchFailed = false;
 
   private initialized: boolean = false;
 
@@ -340,94 +341,84 @@ export class CurrencyService {
 
   private async fetchExchangeRates(): Promise<Record<string, number>> {
     try {
-      // Try primary API first
-      const response = await fetch(
-        `${this.EXCHANGE_RATE_API}?access_key=${process.env.EXCHANGE_RATE_API_KEY}`
-      );
+      // Try primary API first (frankfurter.app - free, no API key needed)
+      const response = await fetch(`${this.EXCHANGE_RATE_API}?from=USD`);
 
       if (response.ok) {
         const contentType = response.headers.get("content-type") || "";
         if (!contentType.includes("application/json")) {
-          const text = await response.text();
-          throw new Error(
-            `Primary exchange-rate API returned non-JSON response (content-type: ${contentType}). Body starts with: ${text.slice(
-              0,
-              80
-            )}`
-          );
+          throw new Error("Primary API returned non-JSON response");
         }
 
         const data: any = await response.json();
         if (!data || typeof data !== "object" || !data.rates) {
-          throw new Error(
-            "Primary exchange-rate API returned invalid JSON payload"
-          );
+          throw new Error("Primary API returned invalid payload");
         }
         const rates: Record<string, number> = {};
 
         // Convert all rates to USD base
+        rates["USD-USD"] = 1;
         for (const [currency, rate] of Object.entries(data.rates)) {
-          if (currency === "USD") {
-            rates[`USD-${currency}`] = 1;
-          } else {
-            rates[`USD-${currency}`] = Number(rate);
-            rates[`${currency}-USD`] = 1 / Number(rate);
-          }
+          rates[`USD-${currency}`] = Number(rate);
+          rates[`${currency}-USD`] = 1 / Number(rate);
         }
 
+        this.rateFetchFailed = false; // Reset on success
         return rates;
       }
     } catch (error) {
-      console.error("Primary API failed, trying backup:", error);
+      if (!this.rateFetchFailed) {
+        console.log("Primary exchange API unavailable, trying backup...");
+      }
     }
 
     try {
-      // Try backup API
-      const response = await fetch(
-        `${this.BACKUP_API}?api_key=${process.env.FURF_API_KEY}`
-      );
+      // Try backup API (open.er-api.com - free, no API key needed)
+      const response = await fetch(this.BACKUP_API);
 
       if (response.ok) {
         const contentType = response.headers.get("content-type") || "";
         if (!contentType.includes("application/json")) {
-          const text = await response.text();
-          throw new Error(
-            `Backup exchange-rate API returned non-JSON response (content-type: ${contentType}). Body starts with: ${text.slice(
-              0,
-              80
-            )}`
-          );
+          throw new Error("Backup API returned non-JSON response");
         }
 
         const data: any = await response.json();
         if (!data || typeof data !== "object" || !data.rates) {
-          throw new Error(
-            "Backup exchange-rate API returned invalid JSON payload"
-          );
+          throw new Error("Backup API returned invalid payload");
         }
         const rates: Record<string, number> = {};
 
+        rates["USD-USD"] = 1;
         for (const [currency, rate] of Object.entries(data.rates)) {
-          if (currency === "USD") {
-            rates[`USD-${currency}`] = Number(rate);
-            rates[`${currency}-USD`] = 1 / Number(rate);
-          }
+          rates[`USD-${currency}`] = Number(rate);
+          rates[`${currency}-USD`] = 1 / Number(rate);
         }
 
+        this.rateFetchFailed = false; // Reset on success
         return rates;
       }
     } catch (error) {
-      console.error("Backup API also failed:", error);
-      throw new Error("Failed to fetch exchange rates");
+      if (!this.rateFetchFailed) {
+        console.error("Backup API also failed, using static fallback rates:", (error as Error).message);
+        this.rateFetchFailed = true;
+      }
     }
 
-    // Fallback return if all APIs fail
+    // Fallback return if all APIs fail (static rates as of Feb 2026)
     return {
       "USD-USD": 1,
       "USD-EUR": 0.92,
       "EUR-USD": 1.09,
       "USD-GBP": 0.79,
       "GBP-USD": 1.27,
+      "USD-JPY": 149.5,
+      "JPY-USD": 0.0067,
+      "USD-CAD": 1.35,
+      "CAD-USD": 0.74,
+      "USD-AUD": 1.53,
+      "AUD-USD": 0.65,
+      "USD-CHF": 0.88,
+      "CHF-USD": 1.14,
     };
   }
 
