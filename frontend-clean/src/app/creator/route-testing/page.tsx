@@ -1,8 +1,10 @@
-# ============================================================================
-# ADVANCIA PAY LEDGER - ROUTE TESTING FRONTEND INTERFACE
-# Author: Advancia Pay Ledger - The Creator
-# Purpose: Complete Route Testing Interface
-# ============================================================================
+"use client";
+
+// ============================================================================
+// ADVANCIA PAY LEDGER - ROUTE TESTING FRONTEND INTERFACE
+// Author: Advancia Pay Ledger - The Creator
+// Purpose: Complete Route Testing Interface
+// ============================================================================
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';

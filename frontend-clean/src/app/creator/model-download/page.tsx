@@ -1,8 +1,10 @@
-# ============================================================================
-# ADVANCIA PAY LEDGER - MODEL DOWNLOAD FRONTEND COMPONENT
-# Author: Advancia Pay Ledger - The Creator
-# Purpose: Complete Model Download Interface
-# ============================================================================
+"use client";
+
+// ============================================================================
+// ADVANCIA PAY LEDGER - MODEL DOWNLOAD FRONTEND COMPONENT
+// Author: Advancia Pay Ledger - The Creator
+// Purpose: Complete Model Download Interface
+// ============================================================================
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';

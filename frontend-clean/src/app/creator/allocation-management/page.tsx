@@ -1,8 +1,10 @@
-# ============================================================================
-# ADVANCIA PAY LEDGER - CREATOR'S ALLOCATION MANAGEMENT SYSTEM
-# Author: Advancia Pay Ledger - The Creator
-# Purpose: Complete Resource Allocation Management
-# ============================================================================
+"use client";
+
+// ============================================================================
+// ADVANCIA PAY LEDGER - CREATOR'S ALLOCATION MANAGEMENT SYSTEM
+// Author: Advancia Pay Ledger - The Creator
+// Purpose: Complete Resource Allocation Management
+// ============================================================================
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';

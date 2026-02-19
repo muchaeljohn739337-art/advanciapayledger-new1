@@ -1,8 +1,10 @@
-# ============================================================================
-# ADVANCIA PAY LEDGER - CREATOR'S SALES PRESENTATION SYSTEM
-# Author: Advancia Pay Ledger - The Creator
-# Purpose: Complete Sales Presentation Implementation
-# ============================================================================
+"use client";
+
+// ============================================================================
+// ADVANCIA PAY LEDGER - CREATOR'S SALES PRESENTATION SYSTEM
+// Author: Advancia Pay Ledger - The Creator
+// Purpose: Complete Sales Presentation Implementation
+// ============================================================================
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';

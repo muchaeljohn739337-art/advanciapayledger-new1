@@ -6,10 +6,6 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
 
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-
   // Environment variables
   env: {
     NEXT_PUBLIC_API_URL:
@@ -22,20 +18,6 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-
-  // Fix chunk loading issues
-  webpack: (config, { dev, isServer }) => {
-    if (!isServer && dev) {
-      config.watchOptions = {
-        poll: 1000,
-        aggregateTimeout: 300,
-      };
-    }
-    return config;
-  },
-
-  // Don't generate static pages that have issues
-  staticPageGenerationTimeout: 0,
 };
 
 module.exports = nextConfig;
