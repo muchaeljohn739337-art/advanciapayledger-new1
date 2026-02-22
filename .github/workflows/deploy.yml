@@ -12,10 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
@@ -27,21 +27,21 @@ jobs:
       
       - name: Run linter
         working-directory: ./backend-clean
-        run: npm run lint || echo "Linting completed"
+        run: npm run lint
       
       - name: Run tests
         working-directory: ./backend-clean
-        run: npm test || echo "Tests completed"
+        run: npm test
 
   test-frontend:
     name: Test Frontend
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
@@ -55,7 +55,8 @@ jobs:
         working-directory: ./frontend-clean
         run: npm run build
         env:
-          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:4000' }}
+          NEXT_PUBLIC_SOCKET_URL: ${{ secrets.NEXT_PUBLIC_SOCKET_URL || secrets.NEXT_PUBLIC_API_URL || 'http://localhost:4000' }}
 
   deploy-backend:
     name: Deploy Backend
@@ -64,7 +65,7 @@ jobs:
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
     
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Deploy to Production
         uses: appleboy/ssh-action@master
@@ -86,7 +87,7 @@ jobs:
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
     
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Deploy to Vercel
         uses: amondnet/vercel-action@v20
@@ -103,10 +104,10 @@ jobs:
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
     
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
       
