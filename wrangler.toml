@@ -1,0 +1,32 @@
+name = "advancia-payledger-backend"
+main = "healthcare-ai-worker.js"
+compatibility_date = "2023-10-30"
+compatibility_flags = ["nodejs_compat"]
+
+[env.production]
+name = "advancia-payledger-backend-prod"
+
+[env.staging]
+name = "advancia-payledger-backend-staging"
+
+# Environment variables
+[vars]
+ENVIRONMENT = "production"
+API_VERSION = "v1"
+
+# KV Namespaces (commented out until created)
+# [[kv_namespaces]]
+# binding = "CACHE"
+# id = "your-kv-namespace-id"
+# preview_id = "your-preview-kv-namespace-id"
+
+# D1 Database (commented out until created)
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "advancia-payledger-db"
+# database_id = "your-database-id"
+
+# R2 Storage
+[[r2_buckets]]
+binding = "STORAGE"
+bucket_name = "advancia-payledger-storage"
