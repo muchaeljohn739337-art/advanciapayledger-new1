@@ -28,6 +28,7 @@
 ## 🚀 IMMEDIATE NEXT STEPS (Choose One)
 
 ### **Option 1: Automated Deploy to Hostinger VPS (FASTEST)**
+
 ```bash
 # Set your Hostinger VPS IP
 export VPS_IP="YOUR_HOSTINGER_VPS_IP"
@@ -42,6 +43,7 @@ ssh root@$VPS_IP
 chmod +x /tmp/quick-deploy.sh
 /tmp/quick-deploy.sh
 ```
+
 **Time: 15-20 minutes** ⚡
 
 ---
@@ -49,6 +51,7 @@ chmod +x /tmp/quick-deploy.sh
 ### **Option 2: Manual Deploy (CONTROLLED)**
 
 #### A. Deploy Backend
+
 ```bash
 export VPS_IP="YOUR_HOSTINGER_VPS_IP"
 ssh root@$VPS_IP
@@ -61,6 +64,7 @@ pm2 start npm -- start
 ```
 
 #### B. Deploy Frontend
+
 ```bash
 # On same server
 mkdir -p /opt/frontend-clean
@@ -72,6 +76,7 @@ pm2 start "node .next/standalone/server.js" --name "frontend"
 ```
 
 #### C. Setup Nginx
+
 ```bash
 apt-get install -y nginx
 # Configure reverse proxy to localhost:3000 and :3001
@@ -84,10 +89,12 @@ systemctl restart nginx
 ---
 
 ### **Option 3: Docker Deploy**
+
 ```bash
 # On your Hostinger VPS
 docker-compose up -d
 ```
+
 **Time: 10-15 minutes** 🐳
 
 ---
@@ -95,7 +102,7 @@ docker-compose up -d
 ## 📋 Core Active Routes
 
 | Route | Purpose |
-|-------|---------|
+| ------- | --------- |
 | `/api/auth/*` | Authentication & registration |
 | `/api/payments/*` | Payment processing (Stripe, crypto) |
 | `/api/crypto/*` | Cryptocurrency operations |
@@ -111,8 +118,8 @@ docker-compose up -d
 
 ## ✨ What You'll Have After Deployment
 
-- ✅ Frontend running at https://advanciapayledger.com
-- ✅ Backend API running at https://api.advanciapayledger.com
+- ✅ Frontend running at <https://advanciapayledger.com>
+- ✅ Backend API running at <https://api.advanciapayledger.com>
 - ✅ Automatic SSL certificates (Let's Encrypt)
 - ✅ Automatic service restart on failure
 - ✅ Nginx reverse proxy configured
@@ -131,4 +138,4 @@ docker-compose up -d
 
 ---
 
-**Status: 🟢 READY FOR IMMEDIATE DEPLOYMENT**
+## Status: 🟢 READY FOR IMMEDIATE DEPLOYMENT
