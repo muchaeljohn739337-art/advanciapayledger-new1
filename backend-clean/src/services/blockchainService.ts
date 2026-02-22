@@ -4,14 +4,14 @@ import { ethers } from "ethers";
 export interface SmartContract {
   id: string;
   address: string;
-  name: string;
-  description: string;
+  name?: string;
+  description?: string;
   network: string;
   abi: any;
-  deployedAt: Date;
-  isActive: boolean;
-  creator: string;
-  contractType: "ERC20" | "ERC721" | "ERC1155" | "CUSTOM";
+  deployedAt?: Date;
+  isActive?: boolean;
+  creator?: string;
+  contractType?: "ERC20" | "ERC721" | "ERC1155" | "CUSTOM";
 }
 
 export interface BlockchainTransaction {
@@ -20,11 +20,11 @@ export interface BlockchainTransaction {
   from: string;
   to: string;
   value: string;
-  gasUsed: string;
-  gasPrice: string;
-  blockNumber: bigint;
-  blockHash: string;
-  transactionIndex: number;
+  gasUsed?: string;
+  gasPrice?: string;
+  blockNumber?: bigint;
+  blockHash?: string;
+  transactionIndex?: number;
   status: number; // 0 = failed, 1 = success
   timestamp: Date;
   network: string;
@@ -240,11 +240,15 @@ export class BlockchainService {
           chain: networkName,
           fromAddress: tx.from,
           toAddress: tx.to || "",
-          amount: parseFloat(tx.value.toString()) / 1e18, // Convert from wei
-          gasUsed: receipt.gasUsed ? parseFloat(receipt.gasUsed.toString()) : null,
-          gasFee: tx.gasPrice ? parseFloat(tx.gasPrice.toString()) / 1e9 : null, // Convert to Gwei
+          amount: Number(ethers.formatEther(tx.value)),
+          gasUsed: receipt.gasUsed
+            ? Number(receipt.gasUsed.toString())
+            : null,
+          gasFee: tx.gasPrice
+            ? Number(ethers.formatUnits(tx.gasPrice, "gwei"))
+            : null,
           status: receipt.status ? "confirmed" : "failed",
-          blockNumber: tx.blockNumber || null,
+          blockNumber: tx.blockNumber ?? null,
         },
       });
 
@@ -343,16 +347,10 @@ export class BlockchainService {
         data: {
           id: smartContract.id,
           address: smartContract.address,
+          chain: smartContract.network,
           name: smartContract.name,
-          description: smartContract.description,
-          network: smartContract.network,
-          abi: JSON.stringify(smartContract.abi),
+          abi: smartContract.abi,
           deployedAt: smartContract.deployedAt,
-          isActive: smartContract.isActive,
-          creator: smartContract.creator,
-          contractType: smartContract.contractType,
-          createdAt: new Date(),
-          updatedAt: new Date(),
         },
       });
 
@@ -395,18 +393,18 @@ export class BlockchainService {
       );
     }
 
-    const contractData = await prisma.smartContract.findUnique({
-      where: { address, network: networkName },
+    const contractRow = await prisma.smartContract.findFirst({
+      where: { address, chain: networkName },
     });
 
-    if (!contractData) {
+    if (!contractRow) {
       throw new Error(`Contract not found: ${address} on ${networkName}`);
     }
 
-    const abi =
-      typeof contractData.abi === "string"
-        ? JSON.parse(contractData.abi)
-        : contractData.abi;
+    const abi = (contractRow as any).abi;
+    if (!abi) {
+      throw new Error(`Contract ABI missing for ${address} on ${networkName}`);
+    }
     const contract = new ethers.Contract(address, abi, provider);
     this.contracts.set(cacheKey, contract);
 
@@ -474,32 +472,25 @@ export class BlockchainService {
 
       // Store in database
       await prisma.blockchainTransaction.upsert({
-        where: { hash: tx.hash },
+        where: { txHash: tx.hash },
         update: {
-          status: blockchainTx.status,
-          blockNumber: blockchainTx.blockNumber,
-          timestamp: blockchainTx.timestamp,
-          metadata: blockchainTx.metadata || undefined,
+          status: receipt.status ? "confirmed" : "failed",
+          blockNumber: tx.blockNumber ?? null,
         },
         create: {
-          hash: blockchainTx.hash,
-          from: blockchainTx.from,
-          to: blockchainTx.to,
-          value: blockchainTx.value,
-          gasUsed: blockchainTx.gasUsed,
-          gasPrice: blockchainTx.gasPrice,
-          blockNumber: blockchainTx.blockNumber,
-          blockHash: blockchainTx.blockHash,
-          transactionIndex: blockchainTx.transactionIndex,
-          status: blockchainTx.status,
-          timestamp: blockchainTx.timestamp,
-          network: blockchainTx.network,
-          contractAddress: blockchainTx.contractAddress || undefined,
-          functionName: blockchainTx.functionName || undefined,
-          functionParams: blockchainTx.functionParams || undefined,
-          transactionType: blockchainTx.transactionType,
-          metadata: blockchainTx.metadata || undefined,
-          userId: blockchainTx.userId || undefined,
+          txHash: tx.hash,
+          chain: networkName,
+          fromAddress: tx.from,
+          toAddress: tx.to || "",
+          amount: Number(ethers.formatEther(tx.value)),
+          gasUsed: receipt.gasUsed
+            ? Number(receipt.gasUsed.toString())
+            : null,
+          gasFee: tx.gasPrice
+            ? Number(ethers.formatUnits(tx.gasPrice, "gwei"))
+            : null,
+          status: receipt.status ? "confirmed" : "failed",
+          blockNumber: tx.blockNumber ?? null,
         },
       });
 
@@ -522,39 +513,32 @@ export class BlockchainService {
 
       const transactions = await prisma.blockchainTransaction.findMany({
         where: {
-          OR: [{ from: userAddress }, { to: userAddress }],
-          ...(networkName ? { network: networkName } : {}),
+          OR: [{ fromAddress: userAddress }, { toAddress: userAddress }],
+          ...(networkName ? { chain: networkName } : {}),
         },
-        orderBy: { timestamp: "desc" },
+        orderBy: { createdAt: "desc" },
         take: limit,
       });
 
       return transactions.map((tx: any) => ({
         id: tx.id,
-        hash: tx.hash,
-        from: tx.from,
-        to: tx.to,
-        value: tx.value,
-        gasUsed: tx.gasUsed,
-        gasPrice: tx.gasPrice,
-        blockNumber: tx.blockNumber as unknown as bigint,
-        blockHash: tx.blockHash,
-        transactionIndex: tx.transactionIndex,
-        status: tx.status,
-        timestamp: tx.timestamp,
-        network: tx.network,
-        contractAddress: tx.contractAddress || undefined,
-        functionName: tx.functionName || undefined,
-        functionParams: tx.functionParams || undefined,
-        transactionType: tx.transactionType as
-          | "PAYMENT"
-          | "DEPOSIT"
-          | "WITHDRAWAL"
-          | "CONTRACT_CALL"
-          | "TOKEN_TRANSFER",
-        metadata: tx.metadata
-          ? (tx.metadata as Record<string, any>)
-          : undefined,
+        hash: tx.txHash,
+        from: tx.fromAddress,
+        to: tx.toAddress,
+        value: String(tx.amount),
+        gasUsed: tx.gasUsed != null ? String(tx.gasUsed) : "0",
+        gasPrice: "0",
+        blockNumber: tx.blockNumber != null ? BigInt(tx.blockNumber) : BigInt(0),
+        blockHash: "",
+        transactionIndex: 0,
+        status: tx.status === "confirmed" ? 1 : 0,
+        timestamp: tx.createdAt,
+        network: tx.chain,
+        contractAddress: null,
+        functionName: null,
+        functionParams: null,
+        transactionType: "PAYMENT",
+        metadata: null,
       }));
     } catch (error) {
       console.error("Error getting transaction history:", error);
@@ -584,7 +568,7 @@ export class BlockchainService {
         await Promise.all([
           prisma.blockchainTransaction.count({
             where: {
-              timestamp: { gte: startDate },
+              createdAt: { gte: startDate },
             },
           }),
           prisma.smartContract.count({
@@ -593,11 +577,11 @@ export class BlockchainService {
             },
           }),
           prisma.blockchainTransaction.groupBy({
-            by: ["network"],
+            by: ["chain"],
             where: {
-              timestamp: { gte: startDate },
+              createdAt: { gte: startDate },
             },
-            _count: { network: true },
+            _count: { chain: true },
           }),
         ]);
 
@@ -605,8 +589,8 @@ export class BlockchainService {
         totalTransactions,
         totalContracts,
         networkStats: networkStats.map((stat: any) => ({
-          network: stat.network,
-          transactions: stat._count.network,
+          network: stat.chain,
+          transactions: stat._count.chain,
         })),
         period: `${days} days`,
       };
@@ -705,28 +689,21 @@ export class BlockchainService {
       }
 
       const contracts = await prisma.smartContract.findMany({
-        where: networkName ? { network: networkName } : {},
+        where: networkName ? { chain: networkName } : {},
         orderBy: { deployedAt: "desc" },
       });
 
       return contracts.map((contract: any) => ({
         id: contract.id,
         address: contract.address,
-        name: contract.name,
-        description: contract.description,
-        network: contract.network,
-        abi:
-          typeof contract.abi === "string"
-            ? JSON.parse(contract.abi)
-            : contract.abi,
-        deployedAt: contract.deployedAt,
-        isActive: contract.isActive,
-        creator: contract.creator,
-        contractType: contract.contractType as
-          | "ERC20"
-          | "ERC721"
-          | "ERC1155"
-          | "CUSTOM",
+        name: contract.name ?? "",
+        description: "",
+        network: contract.chain,
+        abi: contract.abi,
+        deployedAt: contract.deployedAt ?? new Date(0),
+        isActive: true,
+        creator: "",
+        contractType: "CUSTOM",
       }));
     } catch (error) {
       console.error("Error getting smart contracts:", error);

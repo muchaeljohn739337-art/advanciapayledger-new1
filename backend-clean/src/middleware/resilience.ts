@@ -314,16 +314,6 @@ healthCheck.register('nowpayments', async () => {
   }
 }, false);
 
-healthCheck.register('alchemy', async () => {
-  // Check Alchemy API
-  try {
-    // In production: fetch Alchemy endpoint
-    return true;
-  } catch {
-    return false;
-  }
-}, false);
-
 // Auto-recovery system
 export class AutoRecovery {
   private recoveryAttempts: Map<string, number> = new Map();

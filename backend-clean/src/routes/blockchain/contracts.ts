@@ -480,14 +480,14 @@ router.get(
       const page = asString(req.query.page) ?? "1";
 
       const transactions = await prisma.blockchainTransaction.findMany({
-        where: networkName ? { network: networkName } : {},
+        where: networkName ? { chain: networkName } : {},
         orderBy: { createdAt: "desc" },
         take: parseInt(limit),
         skip: (parseInt(page) - 1) * parseInt(limit),
       });
 
       const total = await prisma.blockchainTransaction.count({
-        where: networkName ? { network: networkName } : {},
+        where: networkName ? { chain: networkName } : {},
       });
 
       res.json({
@@ -522,14 +522,14 @@ router.get(
       const page = asString(req.query.page) ?? "1";
 
       const contracts = await prisma.smartContract.findMany({
-        where: networkName ? { network: networkName } : {},
+        where: networkName ? { chain: networkName } : {},
         orderBy: { deployedAt: "desc" },
         take: parseInt(limit),
         skip: (parseInt(page) - 1) * parseInt(limit),
       });
 
       const total = await prisma.smartContract.count({
-        where: networkName ? { network: networkName } : {},
+        where: networkName ? { chain: networkName } : {},
       });
 
       res.json({
