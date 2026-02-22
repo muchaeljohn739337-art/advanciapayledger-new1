@@ -19,7 +19,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
       const response = await fetch(`${apiUrl}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -31,10 +31,16 @@ export default function LoginPage() {
 
       const data = await response.json();
 
-      // Handle pending approval
-      if (response.status === 403 && data.pending) {
-        router.push("/pending-approval");
-        return;
+      // Handle pending approval and other 403 states
+      if (response.status === 403) {
+        if (data.code === "PENDING_APPROVAL") {
+          router.push("/pending-approval");
+          return;
+        }
+        if (data.code === "EMAIL_NOT_VERIFIED") {
+          throw new Error("Please verify your email address. Check your inbox.");
+        }
+        throw new Error(data.error || "Access denied");
       }
 
       if (!response.ok) throw new Error(data.error || "Login failed");

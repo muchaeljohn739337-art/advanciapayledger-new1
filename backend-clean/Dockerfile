@@ -1,5 +1,8 @@
 # Use Node.js 24 LTS
-FROM node:24-alpine
+FROM node:24-alpine AS builder
+
+# Install OpenSSL for Prisma
+RUN apk add --no-cache openssl
 
 # Set working directory
 WORKDIR /app
@@ -8,8 +11,8 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Install dependencies
-RUN npm install --production
+# Install ALL dependencies (including devDeps for tsc)
+RUN npm install
 
 # Copy source code
 COPY . .
@@ -19,6 +22,22 @@ RUN npx prisma generate
 
 # Build TypeScript
 RUN npm run build
+
+# --- Production image ---
+FROM node:24-alpine
+
+RUN apk add --no-cache openssl
+
+WORKDIR /app
+
+COPY package*.json ./
+COPY prisma ./prisma/
+
+RUN npm install --omit=dev
+
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 # Expose port
 EXPOSE 3001

@@ -37,7 +37,7 @@ services:
   # Backend API
   backend:
     build:
-      context: ./backend
+      context: ./backend-clean
       dockerfile: Dockerfile
     container_name: advancia-backend
     restart: unless-stopped
@@ -56,14 +56,14 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ./backend:/app
+      - ./backend-clean:/app
       - /app/node_modules
     command: npm run dev
 
   # Frontend (Next.js)
   frontend:
     build:
-      context: ./frontend
+      context: ./frontend-clean
       dockerfile: Dockerfile
     container_name: advancia-frontend
     restart: unless-stopped
@@ -75,7 +75,7 @@ services:
     depends_on:
       - backend
     volumes:
-      - ./frontend:/app
+      - ./frontend-clean:/app
       - /app/node_modules
       - /app/.next
     command: npm run dev

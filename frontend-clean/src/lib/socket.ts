@@ -156,6 +156,15 @@ class SocketService {
 // Singleton instance
 export const socketService = new SocketService();
 
+// Connect with explicit URL and token (used by useAIGenerator)
+export function connectSocket(url: string, token: string): Socket {
+  const { io } = require('socket.io-client');
+  return io(url, {
+    auth: { token },
+    transports: ['websocket', 'polling'],
+  });
+}
+
 // React hook for using socket in components
 export function useSocket() {
   return {

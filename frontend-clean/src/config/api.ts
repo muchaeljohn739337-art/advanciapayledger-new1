@@ -3,8 +3,8 @@
  * All API URLs should use this config instead of hardcoded values
  */
 
-// Get API URL - CREATOR CONTROL: Localhost only
-export const API_URL = "http://localhost:4000";
+// Get API URL from environment variable (set in .env.local)
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 // Ensure no trailing slash
 export const API_BASE_URL = API_URL.replace(/\/$/, "");
