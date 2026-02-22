@@ -14,6 +14,7 @@ export interface AdminRequest extends Request {
     key: string;
     authenticated: boolean;
   };
+  adminToken?: string;
 }
 
 /**
@@ -38,6 +39,12 @@ export const authenticateAdminKey = (req: AdminRequest, res: Response, next: Nex
   }
 
   const level = adminKeyService.getAdminLevel(adminKey);
+  if (level === 'INVALID') {
+    return res.status(401).json({
+      error: 'Invalid admin key',
+      message: 'The provided admin key is invalid or lacks privileges'
+    });
+  }
   const permissions = adminKeyService.getPermissions(level);
 
   req.admin = {

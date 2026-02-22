@@ -104,7 +104,11 @@ class SecurityConfigService {
 
   encrypt(data: string): { encrypted: string; iv: string; tag: string } {
     const iv = crypto.randomBytes(this.config.encryption.ivSize);
-    const cipher = crypto.createCipheriv(this.config.encryption.algorithm, this.encryptionKey, iv);
+    const cipher: any = crypto.createCipheriv(
+      this.config.encryption.algorithm,
+      this.encryptionKey,
+      iv
+    );
     cipher.setAAD(Buffer.from('advancia-pay-ledger'));
     
     let encrypted = cipher.update(data, 'utf8', 'hex');
@@ -120,7 +124,11 @@ class SecurityConfigService {
   }
 
   decrypt(encryptedData: { encrypted: string; iv: string; tag: string }): string {
-    const decipher = crypto.createDecipheriv(this.config.encryption.algorithm, this.encryptionKey, Buffer.from(encryptedData.iv, 'hex'));
+    const decipher: any = crypto.createDecipheriv(
+      this.config.encryption.algorithm,
+      this.encryptionKey,
+      Buffer.from(encryptedData.iv, 'hex')
+    );
     decipher.setAAD(Buffer.from('advancia-pay-ledger'));
     decipher.setAuthTag(Buffer.from(encryptedData.tag, 'hex'));
     

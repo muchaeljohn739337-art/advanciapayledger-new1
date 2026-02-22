@@ -72,7 +72,7 @@ export const uploadKYCSchema = z.object({
 export const envSchema = z.object({
   DATABASE_URL: z.string().url('Invalid database URL'),
   JWT_SECRET: z.string().min(32, 'JWT secret must be at least 32 characters'),
-  PORT: z.string().transform(Number).default('3001'),
+  PORT: z.coerce.number().default(3001),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   CORS_ORIGIN: z.string().default('*'),
 });

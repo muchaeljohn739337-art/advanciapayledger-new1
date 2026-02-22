@@ -436,40 +436,51 @@ export class AdvancedPaymentProcessingService {
   async getFraudDetectionLogs(page = 1, limit = 50, riskLevel?: string) {
     try {
       const skip = (page - 1) * limit;
-      const where = riskLevel ? { riskLevel } : {};
+      const where: any = {};
+      const normalizedRiskLevel = riskLevel?.toUpperCase();
+      if (normalizedRiskLevel) {
+        // Derived mapping (FraudDetectionLog stores only riskScore in schema)
+        // LOW: <25, MEDIUM: 25-49, HIGH: 50-74, CRITICAL: >=75
+        if (normalizedRiskLevel === "LOW") {
+          where.riskScore = { lt: 25 };
+        } else if (normalizedRiskLevel === "MEDIUM") {
+          where.riskScore = { gte: 25, lt: 50 };
+        } else if (normalizedRiskLevel === "HIGH") {
+          where.riskScore = { gte: 50, lt: 75 };
+        } else if (normalizedRiskLevel === "CRITICAL") {
+          where.riskScore = { gte: 75 };
+        }
+      }
 
       const [logs, total] = await Promise.all([
         prisma.fraudDetectionLog.findMany({
           where,
-          orderBy: { timestamp: "desc" },
+          orderBy: { createdAt: "desc" },
           skip,
           take: limit,
-          include: {
-            user: {
-              select: {
-                email: true,
-                role: true,
-              },
-            },
-          },
         }),
         prisma.fraudDetectionLog.count({ where }),
       ]);
+
+      const deriveRiskLevel = (score: number) => {
+        if (score >= 75) return "CRITICAL";
+        if (score >= 50) return "HIGH";
+        if (score >= 25) return "MEDIUM";
+        return "LOW";
+      };
 
       return {
         logs: logs.map((log: any) => ({
           id: log.id,
           userId: log.userId,
-          userEmail: log.user.email,
-          userRole: log.user.role,
           transactionId: log.transactionId,
           riskScore: log.riskScore,
-          riskLevel: log.riskLevel,
-          reasons: log.reasons,
-          recommendations: log.recommendations,
-          ipAddress: log.ipAddress,
-          userAgent: log.userAgent,
-          timestamp: log.timestamp,
+          riskLevel: deriveRiskLevel(log.riskScore),
+          reasons: (log.riskFactors as any)?.reasons || [],
+          recommendations: (log.details as any)?.recommendations || [],
+          ipAddress: (log.details as any)?.ipAddress || (log.details as any)?.ip,
+          userAgent: (log.details as any)?.userAgent,
+          timestamp: log.createdAt,
         })),
         pagination: {
           page,

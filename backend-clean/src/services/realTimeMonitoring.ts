@@ -1,7 +1,6 @@
 import { Server, Socket } from "socket.io";
 import { createServer } from "http";
 import { prisma } from "../lib/prisma";
-import "../types/socket";
 import { fraudDetection } from "./fraudDetection";
 
 export interface TransactionAlert {
@@ -83,7 +82,7 @@ export class RealTimeMonitoringService {
             });
 
             if (user) {
-              socket.userId = data.userId;
+              (socket as any).userId = data.userId;
               socket.join(`user_${data.userId}`);
 
               // Track connected users
@@ -113,8 +112,9 @@ export class RealTimeMonitoringService {
       // Handle alert acknowledgment
       socket.on("acknowledge_alert", async (data: { alertId: string }) => {
         try {
-          if (socket.userId) {
-            await this.markAlertAsRead(data.alertId, socket.userId);
+          const userId = (socket as any).userId as string | undefined;
+          if (userId) {
+            await this.markAlertAsRead(data.alertId, userId);
             socket.emit("alert_acknowledged", { alertId: data.alertId });
           }
         } catch (error) {
@@ -125,12 +125,13 @@ export class RealTimeMonitoringService {
 
       // Handle disconnect
       socket.on("disconnect", () => {
-        if (socket.userId) {
-          const userSockets = this.connectedUsers.get(socket.userId);
+        const userId = (socket as any).userId as string | undefined;
+        if (userId) {
+          const userSockets = this.connectedUsers.get(userId);
           if (userSockets) {
             userSockets.delete(socket.id);
             if (userSockets.size === 0) {
-              this.connectedUsers.delete(socket.userId);
+              this.connectedUsers.delete(userId);
             }
           }
         }

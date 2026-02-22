@@ -36,6 +36,7 @@ class HumanLoopService extends EventEmitter {
   private static instance: HumanLoopService;
   private userPatterns = new Map<string, UserBehaviorPattern>();
   private adaptations = new Map<string, SystemAdaptation[]>();
+  private criticalAdaptations: string[] = [];
   private nonNegotiableRules: string[] = [
     'security_never_compromised',
     'data_privacy_always_respected',

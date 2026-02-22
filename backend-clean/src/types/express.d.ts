@@ -18,10 +18,19 @@ declare module 'express-serve-static-core' {
       longitude?: number;
     };
     user?: {
-      id: string;
+      userId: string;
+      id?: string;
       email: string;
       role: string;
-      status: string;
+      status?: string;
     };
+
+    admin?: {
+      level: 'ADMIN' | 'SUPER_ADMIN' | 'SYSTEM_ADMIN';
+      permissions: string[];
+      key: string;
+      authenticated: boolean;
+    };
+    adminToken?: string;
   }
 }

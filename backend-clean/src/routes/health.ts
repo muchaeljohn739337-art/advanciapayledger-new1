@@ -5,6 +5,11 @@ import os from 'os';
 
 const router = Router();
 
+function paramToString(value: unknown): string {
+  if (Array.isArray(value)) return String(value[0] ?? '');
+  return String(value ?? '');
+}
+
 // Helper function to get system resource information
 async function getSystemResources(): Promise<{
   memory: { used_percent: number; total: number; used: number; free: number };
@@ -66,7 +71,6 @@ router.get('/', async (req: Request, res: Response) => {
     const circuitBreakerStatuses = {
       stripe: circuitBreakers.stripe.getState(),
       nowpayments: circuitBreakers.nowpayments.getState(),
-      alchemy: circuitBreakers.alchemy.getState(),
       database: circuitBreakers.database.getState(),
       email: circuitBreakers.email.getState(),
       sms: circuitBreakers.sms.getState(),
@@ -157,7 +161,7 @@ router.get('/', async (req: Request, res: Response) => {
 
 // Check specific service
 router.get('/service/:serviceName', async (req: Request, res: Response) => {
-  const { serviceName } = req.params;
+  const serviceName = paramToString((req.params as any).serviceName);
   
   try {
     const isHealthy = await healthCheck.checkService(serviceName);
@@ -181,7 +185,7 @@ router.get('/service/:serviceName', async (req: Request, res: Response) => {
 
 // Trigger recovery for a service
 router.post('/recover/:serviceName', async (req: Request, res: Response) => {
-  const { serviceName } = req.params;
+  const serviceName = paramToString((req.params as any).serviceName);
 
   try {
     const recovered = await autoRecovery.attemptRecovery(serviceName);
@@ -203,7 +207,7 @@ router.post('/recover/:serviceName', async (req: Request, res: Response) => {
 
 // Reset circuit breaker
 router.post('/circuit-breaker/:service/reset', (req: Request, res: Response) => {
-  const { service } = req.params;
+  const service = paramToString((req.params as any).service);
 
   const breaker = (circuitBreakers as any)[service];
   if (!breaker) {
@@ -225,7 +229,8 @@ router.post('/circuit-breaker/:service/reset', (req: Request, res: Response) => 
 
 // Enable/disable feature
 router.post('/feature/:featureName/:action', (req: Request, res: Response) => {
-  const { featureName, action } = req.params;
+  const featureName = paramToString((req.params as any).featureName);
+  const action = paramToString((req.params as any).action);
 
   if (action === 'enable') {
     featureFlags.enable(featureName);
@@ -253,7 +258,6 @@ router.get('/resilience', (req: Request, res: Response) => {
   const circuitBreakerStatuses = {
     stripe: circuitBreakers.stripe.getState(),
     nowpayments: circuitBreakers.nowpayments.getState(),
-    alchemy: circuitBreakers.alchemy.getState(),
     database: circuitBreakers.database.getState(),
     email: circuitBreakers.email.getState(),
     sms: circuitBreakers.sms.getState(),

@@ -2,7 +2,6 @@ import { Server as HTTPServer } from "http";
 import { Server, Socket } from "socket.io";
 import jwt from "jsonwebtoken";
 import { prisma } from "../lib/prisma";
-import "../types/socket";
 import { verifyToken } from "../utils/jwt";
 
 interface AuthenticatedSocket extends Socket {
@@ -238,6 +237,3 @@ export function getSocketService(): SocketService {
   }
   return socketService;
 }
-
-// Export the initializeSocketService function for import in index.ts
-export { initializeSocketService };

@@ -72,20 +72,22 @@ router.get(
         return;
       }
 
-      const { paymentId } = req.params;
+      const paymentId = Array.isArray((req.params as any).paymentId)
+        ? (req.params as any).paymentId[0]
+        : (req.params as any).paymentId;
       const status = await nowPayments.getPaymentStatus(paymentId);
 
       res.json({
         paymentId: status.payment_id,
-        status: nowPayments.mapPaymentStatus(status.payment_status),
-        rawStatus: status.payment_status,
+        status: nowPayments.mapPaymentStatus(String(status.payment_status)),
+        rawStatus: String(status.payment_status),
         payAddress: status.pay_address,
         payAmount: status.pay_amount,
         payCurrency: status.pay_currency,
         priceAmount: status.price_amount,
         priceCurrency: status.price_currency,
         actuallyPaid: status.actually_paid,
-        isFinal: nowPayments.isFinalStatus(status.payment_status),
+        isFinal: nowPayments.isFinalStatus(String(status.payment_status)),
       });
     } catch (error: any) {
       console.error("Get payment status error:", error);

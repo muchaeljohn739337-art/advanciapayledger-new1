@@ -316,24 +316,37 @@ export class AdminAnalyticsService {
         totalTxCount > 0 ? (sb._count.status / totalTxCount) * 100 : 0,
     }));
 
-    // Risk distribution
-    const riskDistribution = await prisma.fraudDetectionLog.groupBy({
-      by: ["riskLevel"],
-      where: {
-        timestamp: { gte: startDate },
-      },
-      _count: { riskLevel: true },
-    });
+    // Risk distribution (derived from riskScore)
+    const [lowRisk, mediumRisk, highRisk, criticalRisk] = await Promise.all([
+      prisma.fraudDetectionLog.count({
+        where: { createdAt: { gte: startDate }, riskScore: { lt: 25 } },
+      }),
+      prisma.fraudDetectionLog.count({
+        where: {
+          createdAt: { gte: startDate },
+          riskScore: { gte: 25, lt: 50 },
+        },
+      }),
+      prisma.fraudDetectionLog.count({
+        where: {
+          createdAt: { gte: startDate },
+          riskScore: { gte: 50, lt: 75 },
+        },
+      }),
+      prisma.fraudDetectionLog.count({
+        where: { createdAt: { gte: startDate }, riskScore: { gte: 75 } },
+      }),
+    ]);
 
-    const totalRiskCount = riskDistribution.reduce(
-      (sum: any, rd: any) => sum + rd._count.riskLevel,
-      0
-    );
-    const riskDistributionData = riskDistribution.map((rd: any) => ({
-      level: rd.riskLevel,
-      count: rd._count.riskLevel,
-      percentage:
-        totalRiskCount > 0 ? (rd._count.riskLevel / totalRiskCount) * 100 : 0,
+    const totalRiskCount = lowRisk + mediumRisk + highRisk + criticalRisk;
+    const riskDistributionData = [
+      { level: "LOW", count: lowRisk },
+      { level: "MEDIUM", count: mediumRisk },
+      { level: "HIGH", count: highRisk },
+      { level: "CRITICAL", count: criticalRisk },
+    ].map((rd) => ({
+      ...rd,
+      percentage: totalRiskCount > 0 ? (rd.count / totalRiskCount) * 100 : 0,
     }));
 
     return {
@@ -547,7 +560,7 @@ export class AdminAnalyticsService {
     const activeUsers = await prisma.userActivityLog.groupBy({
       by: ["userId"],
       where: {
-        timestamp: {
+        createdAt: {
           gte: startDate,
           lte: endDate,
         },
@@ -591,20 +604,20 @@ export class AdminAnalyticsService {
       const [highRisk, critical, blocked] = await Promise.all([
         prisma.fraudDetectionLog.count({
           where: {
-            timestamp: {
+            createdAt: {
               gte: dayStart,
               lte: dayEnd,
             },
-            riskLevel: "HIGH",
+            riskScore: { gte: 50, lt: 75 },
           },
         }),
         prisma.fraudDetectionLog.count({
           where: {
-            timestamp: {
+            createdAt: {
               gte: dayStart,
               lte: dayEnd,
             },
-            riskLevel: "CRITICAL",
+            riskScore: { gte: 75 },
           },
         }),
         prisma.transaction.count({
@@ -808,7 +821,7 @@ export class AdminAnalyticsService {
         }),
         prisma.fraudDetectionLog.count({
           where: {
-            timestamp: { gte: lastHour },
+            createdAt: { gte: lastHour },
           },
         }),
         this.getActiveUsers(last5Minutes, now),

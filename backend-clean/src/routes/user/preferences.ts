@@ -4,6 +4,11 @@ import { prisma } from "../../lib/prisma";
 
 const router = Router();
 
+function paramToString(value: unknown): string {
+  if (Array.isArray(value)) return String(value[0] ?? "");
+  return String(value ?? "");
+}
+
 // Get user preferences
 router.get("/", authenticate, async (req: AuthRequest, res) => {
   try {
@@ -113,7 +118,7 @@ router.patch("/:field", authenticate, async (req: AuthRequest, res) => {
       return res.status(401).json({ error: "User not authenticated" });
     }
 
-    const { field } = req.params;
+    const field = paramToString((req.params as any).field);
     const { value } = req.body;
 
     // Validate field name
@@ -141,11 +146,11 @@ router.patch("/:field", authenticate, async (req: AuthRequest, res) => {
     const preferences = await prisma.userPreference.upsert({
       where: { userId },
       update: {
-        [field]: value,
+        [field as any]: value,
       },
       create: {
         userId,
-        [field]: value,
+        [field as any]: value,
       },
     });
 
@@ -155,7 +160,7 @@ router.patch("/:field", authenticate, async (req: AuthRequest, res) => {
       preferences,
     });
   } catch (error) {
-    console.error(`Error updating ${req.params.field}:`, error);
+    console.error(`Error updating ${paramToString((req.params as any).field)}:`, error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",

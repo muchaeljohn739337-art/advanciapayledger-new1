@@ -8,6 +8,7 @@ interface UserAdaptationProfile {
     preferred: string[];
     avoided: string[];
     mastered: string[];
+    completed: string[];
   };
   skillLevel: {
     beginner: string[];
@@ -48,6 +49,7 @@ class UserAdaptationService extends EventEmitter {
   private userProfiles = new Map<string, UserAdaptationProfile>();
   private adaptationChallenges = new Map<string, AdaptationChallenge>();
   private learningPaths = new Map<string, string[]>();
+  private progressiveLevels: any[] = [];
 
   static getInstance(): UserAdaptationService {
     if (!UserAdaptationService.instance) {
@@ -467,7 +469,8 @@ class UserAdaptationService extends EventEmitter {
         learned: [],
         preferred: [],
         avoided: [],
-        mastered: []
+        mastered: [],
+        completed: [],
       },
       skillLevel: {
         beginner: [],

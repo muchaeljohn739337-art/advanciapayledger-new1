@@ -4,10 +4,10 @@
  * Scheduled tasks and background jobs
  */
 
-import cron from 'node-cron';
+import cron, { type ScheduledTask } from 'node-cron';
 
 export class CronService {
-  private jobs: Map<string, cron.ScheduledTask> = new Map();
+  private jobs: Map<string, ScheduledTask> = new Map();
 
   constructor() {
     console.log('[CRON] Cron service initialized');
@@ -54,8 +54,6 @@ export class CronService {
       } catch (error) {
         console.error(`[CRON] Job ${name} failed:`, error);
       }
-    }, {
-      scheduled: true
     });
 
     this.jobs.set(name, job);
@@ -80,7 +78,7 @@ export class CronService {
   getJobStatus(): Array<{ name: string; running: boolean }> {
     return Array.from(this.jobs.entries()).map(([name, job]) => ({
       name,
-      running: job.running || false
+      running: Boolean((job as any).running ?? true)
     }));
   }
 }

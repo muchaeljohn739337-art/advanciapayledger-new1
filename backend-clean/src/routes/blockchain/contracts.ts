@@ -5,6 +5,11 @@ import { prisma } from "../../lib/prisma";
 
 const router = Router();
 
+const asString = (value: unknown): string | undefined => {
+  if (Array.isArray(value)) return value[0];
+  return typeof value === "string" ? value : undefined;
+};
+
 // Get supported networks
 router.get("/networks", authenticate, async (req: AuthRequest, res) => {
   try {
@@ -29,7 +34,8 @@ router.get(
   authenticate,
   async (req: AuthRequest, res) => {
     try {
-      const { networkName } = req.params;
+      const networkName =
+        asString((req.params as any).networkName) ?? (req.params as any).networkName;
       const status = await blockchainService.getNetworkStatus(networkName);
 
       res.json({
@@ -99,7 +105,9 @@ router.post(
   authenticate,
   async (req: AuthRequest, res) => {
     try {
-      const { contractAddress } = req.params;
+      const contractAddress = Array.isArray((req.params as any).contractAddress)
+        ? (req.params as any).contractAddress[0]
+        : (req.params as any).contractAddress;
       const {
         methodName,
         params = [],
@@ -140,9 +148,9 @@ router.post(
 // Get smart contracts
 router.get("/contracts", authenticate, async (req: AuthRequest, res) => {
   try {
-    const { networkName } = req.query;
+    const networkName = asString(req.query.networkName);
     const contracts = await blockchainService.getSmartContracts(
-      networkName as string
+      networkName
     );
 
     res.json({
@@ -164,12 +172,14 @@ router.get(
   authenticate,
   async (req: AuthRequest, res) => {
     try {
-      const { contractAddress } = req.params;
-      const { networkName = "Ethereum Mainnet" } = req.query;
+      const contractAddress =
+        asString((req.params as any).contractAddress) ??
+        (req.params as any).contractAddress;
+      const networkName = asString(req.query.networkName) ?? "Ethereum Mainnet";
 
       const contract = await blockchainService.getContract(
         contractAddress,
-        networkName as string
+        networkName
       );
 
       res.json({
@@ -252,12 +262,13 @@ router.get(
         });
       }
 
-      const { networkName = "Ethereum Mainnet", limit = 50 } = req.query;
+      const networkName = asString(req.query.networkName) ?? "Ethereum Mainnet";
+      const limit = asString(req.query.limit) ?? "50";
 
       const transactions = await blockchainService.getTransactionHistory(
         wallet.cryptoAddress,
-        networkName as string,
-        parseInt(limit as string)
+        networkName,
+        parseInt(limit)
       );
 
       res.json({
@@ -299,10 +310,10 @@ router.get("/wallet/balances", authenticate, async (req: AuthRequest, res) => {
       });
     }
 
-    const { networkName = "Ethereum Mainnet" } = req.query;
+    const networkName = asString(req.query.networkName) ?? "Ethereum Mainnet";
     const balances = await blockchainService.getTokenBalances(
       wallet.cryptoAddress,
-      networkName as string
+      networkName
     );
 
     res.json({
@@ -464,27 +475,29 @@ router.get(
   requireRole("ADMIN"),
   async (req: AuthRequest, res) => {
     try {
-      const { networkName, limit = 100, page = 1 } = req.query;
+      const networkName = asString(req.query.networkName);
+      const limit = asString(req.query.limit) ?? "100";
+      const page = asString(req.query.page) ?? "1";
 
       const transactions = await prisma.blockchainTransaction.findMany({
-        where: networkName ? { network: networkName as string } : {},
-        orderBy: { timestamp: "desc" },
-        take: parseInt(limit as string),
-        skip: (parseInt(page as string) - 1) * parseInt(limit as string),
+        where: networkName ? { network: networkName } : {},
+        orderBy: { createdAt: "desc" },
+        take: parseInt(limit),
+        skip: (parseInt(page) - 1) * parseInt(limit),
       });
 
       const total = await prisma.blockchainTransaction.count({
-        where: networkName ? { network: networkName as string } : {},
+        where: networkName ? { network: networkName } : {},
       });
 
       res.json({
         success: true,
         data: transactions,
         pagination: {
-          page: parseInt(page as string),
-          limit: parseInt(limit as string),
+          page: parseInt(page),
+          limit: parseInt(limit),
           total,
-          pages: Math.ceil(total / parseInt(limit as string)),
+          pages: Math.ceil(total / parseInt(limit)),
         },
       });
     } catch (error) {
@@ -504,27 +517,29 @@ router.get(
   requireRole("ADMIN"),
   async (req: AuthRequest, res) => {
     try {
-      const { networkName, limit = 100, page = 1 } = req.query;
+      const networkName = asString(req.query.networkName);
+      const limit = asString(req.query.limit) ?? "100";
+      const page = asString(req.query.page) ?? "1";
 
       const contracts = await prisma.smartContract.findMany({
-        where: networkName ? { network: networkName as string } : {},
+        where: networkName ? { network: networkName } : {},
         orderBy: { deployedAt: "desc" },
-        take: parseInt(limit as string),
-        skip: (parseInt(page as string) - 1) * parseInt(limit as string),
+        take: parseInt(limit),
+        skip: (parseInt(page) - 1) * parseInt(limit),
       });
 
       const total = await prisma.smartContract.count({
-        where: networkName ? { network: networkName as string } : {},
+        where: networkName ? { network: networkName } : {},
       });
 
       res.json({
         success: true,
         data: contracts,
         pagination: {
-          page: parseInt(page as string),
-          limit: parseInt(limit as string),
+          page: parseInt(page),
+          limit: parseInt(limit),
           total,
-          pages: Math.ceil(total / parseInt(limit as string)),
+          pages: Math.ceil(total / parseInt(limit)),
         },
       });
     } catch (error) {

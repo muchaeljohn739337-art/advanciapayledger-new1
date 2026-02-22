@@ -49,13 +49,15 @@ async function logActivity(
       await prisma.userActivityLog.create({
         data: {
           userId,
-          action: `${req.method} ${req.path}`,
-          endpoint: req.path,
-          method: req.method,
-          responseTime: responseTime,
+          activity: `${req.method} ${req.path}`,
+          details: {
+            endpoint: req.path,
+            method: req.method,
+            responseTime,
+            success: res.statusCode < 400,
+          },
           ipAddress: getClientIP(req),
           userAgent: req.get("user-agent"),
-          success: res.statusCode < 400,
         },
       });
 

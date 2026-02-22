@@ -67,7 +67,12 @@ router.get(
   authenticate,
   async (req: AuthRequest, res) => {
     try {
-      const { fromCurrency, toCurrency } = req.params;
+      const fromCurrency = Array.isArray((req.params as any).fromCurrency)
+        ? (req.params as any).fromCurrency[0]
+        : (req.params as any).fromCurrency;
+      const toCurrency = Array.isArray((req.params as any).toCurrency)
+        ? (req.params as any).toCurrency[0]
+        : (req.params as any).toCurrency;
 
       const rate = await currencyService.getExchangeRate(
         fromCurrency,
@@ -125,7 +130,12 @@ router.get(
   authenticate,
   async (req: AuthRequest, res) => {
     try {
-      const { fromCurrency, toCurrency } = req.params;
+      const fromCurrency = Array.isArray((req.params as any).fromCurrency)
+        ? (req.params as any).fromCurrency[0]
+        : (req.params as any).fromCurrency;
+      const toCurrency = Array.isArray((req.params as any).toCurrency)
+        ? (req.params as any).toCurrency[0]
+        : (req.params as any).toCurrency;
       const days = parseInt(req.query.days as string) || 30;
 
       const history = await currencyService.getExchangeRateHistory(
@@ -322,7 +332,9 @@ router.put(
         });
       }
 
-      const { code } = req.params;
+      const code = Array.isArray((req.params as any).code)
+        ? (req.params as any).code[0]
+        : (req.params as any).code;
       const updates = req.body;
 
       const updatedCurrency = await currencyService.updateCurrency(

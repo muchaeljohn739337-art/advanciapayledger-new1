@@ -16,6 +16,7 @@ import {
   verifyAdminToken,
   logAdminAction
 } from '../middleware/adminAuth';
+import type { AdminRequest } from '../middleware/adminAuth';
 
 const router = Router();
 
@@ -59,19 +60,25 @@ router.post('/authenticate', authenticateAdminKey, (req, res) => {
  * Generate Admin Token
  * POST /api/admin-key/generate-token
  */
-router.post('/generate-token', authenticateAdminKey, generateAdminToken, (req: res) => {
-  res.json({
-    success: true,
-    token: req.adminToken,
-    admin: {
-      level: req.admin?.level,
-      permissions: req.admin?.permissions,
-    },
-    expiresIn: 3600,
-    message: 'Admin token generated successfully',
-    timestamp: new Date().toISOString()
-  });
-});
+router.post(
+  '/generate-token',
+  authenticateAdminKey,
+  generateAdminToken,
+  (req: AdminRequest, res: Response) => {
+    res.json({
+      success: true,
+      token: req.adminToken,
+      admin: {
+        level: req.admin?.level,
+        permissions: req.admin?.permissions,
+      },
+      expiresIn: 3600,
+      message: 'Admin token generated successfully',
+      timestamp: new Date().toISOString(),
+    });
+  }
+);
+
 
 /**
  * Verify Admin Token

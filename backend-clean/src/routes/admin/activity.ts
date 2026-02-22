@@ -17,12 +17,12 @@ router.get(
 
       const where: any = { userId };
       if (action && typeof action === "string") {
-        where.action = { contains: action, mode: "insensitive" };
+        where.activity = { contains: action, mode: "insensitive" };
       }
 
       const logs = await prisma.userActivityLog.findMany({
         where,
-        orderBy: { timestamp: "desc" },
+        orderBy: { createdAt: "desc" },
         take: Number(limit),
         skip: (Number(page) - 1) * Number(limit),
       });
@@ -57,12 +57,12 @@ router.get("/my-activity", authenticate, async (req: AuthRequest, res) => {
 
     const where: any = { userId };
     if (action && typeof action === "string") {
-      where.action = { contains: action, mode: "insensitive" };
+      where.activity = { contains: action, mode: "insensitive" };
     }
 
     const logs = await prisma.userActivityLog.findMany({
       where,
-      orderBy: { timestamp: "desc" },
+      orderBy: { createdAt: "desc" },
       take: Number(limit),
       skip: (Number(page) - 1) * Number(limit),
     });
@@ -98,39 +98,48 @@ router.get(
 
       // Total activities
       const totalActivities = await prisma.userActivityLog.count({
-        where: { timestamp: { gte: startDate } },
+        where: { createdAt: { gte: startDate } },
       });
 
       // Activities by action type
       const activitiesByAction = await prisma.userActivityLog.groupBy({
-        by: ["action"],
-        where: { timestamp: { gte: startDate } },
-        _count: { action: true },
-        orderBy: { _count: { action: "desc" } },
+        by: ["activity"],
+        where: { createdAt: { gte: startDate } },
+        _count: { activity: true },
+        orderBy: { _count: { activity: "desc" } },
         take: 10,
       });
 
       // Failed activities
-      const failedActivities = await prisma.userActivityLog.count({
-        where: {
-          timestamp: { gte: startDate },
-          success: false,
-        },
+      // success/responseTime are stored inside details Json (if present)
+      const recentLogsForStats = await prisma.userActivityLog.findMany({
+        where: { createdAt: { gte: startDate } },
+        select: { details: true },
+        take: 5000,
+        orderBy: { createdAt: "desc" },
       });
 
-      // Average response time
-      const avgResponseTime = await prisma.userActivityLog.aggregate({
-        where: {
-          timestamp: { gte: startDate },
-          responseTime: { not: null },
-        },
-        _avg: { responseTime: true },
-      });
+      let failedActivities = 0;
+      let responseTimeTotal = 0;
+      let responseTimeCount = 0;
+
+      for (const log of recentLogsForStats as any[]) {
+        const success = log?.details?.success;
+        if (success === false) failedActivities++;
+        const responseTime = log?.details?.responseTime;
+        if (typeof responseTime === "number") {
+          responseTimeTotal += responseTime;
+          responseTimeCount++;
+        }
+      }
+
+      const avgResponseTime =
+        responseTimeCount > 0 ? responseTimeTotal / responseTimeCount : 0;
 
       // Most active users
       const mostActiveUsers = await prisma.userActivityLog.groupBy({
         by: ["userId"],
-        where: { timestamp: { gte: startDate } },
+        where: { createdAt: { gte: startDate } },
         _count: { userId: true },
         orderBy: { _count: { userId: "desc" } },
         take: 10,
@@ -159,11 +168,11 @@ router.get(
                   100
                 ).toFixed(2)
               : 0,
-          avgResponseTime: avgResponseTime._avg.responseTime || 0,
+          avgResponseTime,
         },
         activitiesByAction: activitiesByAction.map((item: any) => ({
-          action: item.action,
-          count: item._count.action,
+          action: item.activity,
+          count: item._count.activity,
         })),
         mostActiveUsers: mostActiveUsersWithDetails,
       });

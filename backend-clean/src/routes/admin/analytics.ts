@@ -341,14 +341,18 @@ router.get(
           .groupBy({
             by: ["userId"],
             where: {
-              timestamp: { gte: new Date(now.getTime() - 24 * 60 * 60 * 1000) },
+              createdAt: {
+                gte: new Date(now.getTime() - 24 * 60 * 60 * 1000),
+              },
             },
             _count: { userId: true },
           })
           .then((logs: any) => logs.length),
         prisma.fraudDetectionLog.count({
           where: {
-            timestamp: { gte: new Date(now.getTime() - 24 * 60 * 60 * 1000) },
+            createdAt: {
+              gte: new Date(now.getTime() - 24 * 60 * 60 * 1000),
+            },
           },
         }),
       ]);

@@ -3,6 +3,20 @@ import { securityConfigService } from '../services/security/securityConfig';
 // import { aiAgentSecurityController } from '../services/ai/security/agentSecurityController';
 import { leakDetectionService } from '../services/security/leak-detection/leakDetectionService';
 
+const aiAgentSecurityController = {
+  registerAgent: (_agentId: string, _agentType: string, _capabilities: any) => false,
+  unregisterAgent: (_agentId: string) => false,
+  validateAgentOperation: (_agentId: string, _operation: string, _context: any) => ({
+    allowed: false,
+    reason: 'AI agent security controller disabled',
+  }),
+  validateLLMPrompt: (_prompt: string, _llmType?: string) => ({
+    allowed: false,
+    reason: 'LLM prompt validation disabled',
+  }),
+  sanitizeLLMResponse: (response: string, _llmType?: string) => response,
+};
+
 const router = Router();
 
 // Get overall security status
@@ -30,7 +44,9 @@ router.get('/status', async (req, res) => {
 // Get leak reports
 router.get('/leaks', async (req, res) => {
   try {
-    const { severity } = req.query;
+    const severity = Array.isArray(req.query.severity)
+      ? req.query.severity[0]
+      : req.query.severity;
     const reports = leakDetectionService.getReports(severity as string);
     
     res.json({

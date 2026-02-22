@@ -483,12 +483,15 @@ export class FraudDetectionService {
           userId: data.userId,
           transactionId: data.transactionId,
           riskScore: data.riskScore,
-          riskLevel: data.riskLevel as any,
-          reasons: data.reasons,
-          recommendations: data.recommendations,
-          ipAddress: data.ip,
-          userAgent: data.userAgent,
-          timestamp: new Date(),
+          action: data.riskLevel,
+          riskFactors: {
+            reasons: data.reasons,
+          },
+          details: {
+            recommendations: data.recommendations,
+            ipAddress: data.ip,
+            userAgent: data.userAgent,
+          },
         },
       });
     } catch (error) {

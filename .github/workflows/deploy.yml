@@ -90,7 +90,7 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Deploy to Vercel
-        uses: amondnet/vercel-action@v20
+        uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
@@ -120,26 +120,4 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
-  notify-deployment:
-    name: Notify Deployment Status
-    needs: [deploy-backend, deploy-frontend]
-    runs-on: ubuntu-latest
-    if: always()
-    
-    steps:
-      - name: Send Slack Notification
-        if: ${{ secrets.SLACK_WEBHOOK_URL }}
-        uses: 8398a7/action-slack@v3
-        with:
-          status: ${{ job.status }}
-          text: 'Advancia Pay Ledger deployment completed'
-          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-      
-      - name: Send Discord Notification
-        if: ${{ secrets.DISCORD_WEBHOOK_URL }}
-        uses: sarisia/actions-status-discord@v1
-        with:
-          webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          status: ${{ job.status }}
-          title: 'Advancia Pay Ledger Deployment'
-          description: 'Deployment to production completed'
+

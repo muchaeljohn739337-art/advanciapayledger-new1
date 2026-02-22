@@ -114,7 +114,9 @@ router.get(
         return res.status(401).json({ error: "User not authenticated" });
       }
 
-      const { transactionId } = req.params;
+      const transactionId = Array.isArray((req.params as any).transactionId)
+        ? (req.params as any).transactionId[0]
+        : (req.params as any).transactionId;
       const status = await advancedPaymentProcessing.getTransactionStatus(
         transactionId,
         userId
@@ -311,10 +313,10 @@ async function getPaymentProcessingStats() {
         where: { createdAt: { gte: startOfMonth } },
       }),
       prisma.fraudDetectionLog.count({
-        where: { riskLevel: "HIGH" },
+        where: { riskScore: { gte: 50, lt: 75 } },
       }),
       prisma.fraudDetectionLog.count({
-        where: { riskLevel: "CRITICAL" },
+        where: { riskScore: { gte: 75 } },
       }),
       prisma.transaction.aggregate({
         where: { status: "COMPLETED" },
@@ -329,7 +331,7 @@ async function getPaymentProcessingStats() {
       }),
       prisma.fraudDetectionLog.count({
         where: {
-          timestamp: {
+          createdAt: {
             gte: startOfDay,
           },
         },
@@ -364,10 +366,14 @@ async function getPaymentProcessingStats() {
 async function getRiskDistribution() {
   try {
     const [low, medium, high, critical] = await Promise.all([
-      prisma.fraudDetectionLog.count({ where: { riskLevel: "LOW" } }),
-      prisma.fraudDetectionLog.count({ where: { riskLevel: "MEDIUM" } }),
-      prisma.fraudDetectionLog.count({ where: { riskLevel: "HIGH" } }),
-      prisma.fraudDetectionLog.count({ where: { riskLevel: "CRITICAL" } }),
+      prisma.fraudDetectionLog.count({ where: { riskScore: { lt: 25 } } }),
+      prisma.fraudDetectionLog.count({
+        where: { riskScore: { gte: 25, lt: 50 } },
+      }),
+      prisma.fraudDetectionLog.count({
+        where: { riskScore: { gte: 50, lt: 75 } },
+      }),
+      prisma.fraudDetectionLog.count({ where: { riskScore: { gte: 75 } } }),
     ]);
 
     const total = low + medium + high + critical;

@@ -4,6 +4,17 @@ import { realTimeMonitoring } from "../../services/realTimeMonitoring";
 
 const router = Router();
 
+function paramToString(value: unknown): string {
+  if (Array.isArray(value)) return String(value[0] ?? "");
+  return String(value ?? "");
+}
+
+function asSeverity(value: unknown): "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | undefined {
+  const str = Array.isArray(value) ? value[0] : value;
+  if (str === "LOW" || str === "MEDIUM" || str === "HIGH" || str === "CRITICAL") return str;
+  return undefined;
+}
+
 // Get user's transaction alerts
 router.get("/user/alerts", authenticate, async (req: AuthRequest, res) => {
   try {
@@ -12,7 +23,10 @@ router.get("/user/alerts", authenticate, async (req: AuthRequest, res) => {
       return res.status(401).json({ error: "User not authenticated" });
     }
 
-    const includeRead = req.query.includeRead === "true";
+    const includeReadParam = Array.isArray(req.query.includeRead)
+      ? req.query.includeRead[0]
+      : req.query.includeRead;
+    const includeRead = includeReadParam === "true";
     const alerts = await realTimeMonitoring.getUserAlerts(userId, includeRead);
 
     res.json({
@@ -36,7 +50,7 @@ router.post(
   async (req: AuthRequest, res) => {
     try {
       const userId = req.user?.userId;
-      const { alertId } = req.params;
+      const alertId = paramToString((req.params as any).alertId);
 
       if (!userId) {
         return res.status(401).json({ error: "User not authenticated" });
@@ -113,7 +127,7 @@ router.put(
   requireRole("ADMIN"),
   async (req: AuthRequest, res) => {
     try {
-      const { ruleId } = req.params;
+      const ruleId = paramToString((req.params as any).ruleId);
       const updates = req.body;
 
       const updatedRule = await realTimeMonitoring.updateMonitoringRule(
@@ -150,7 +164,7 @@ router.delete(
   requireRole("ADMIN"),
   async (req: AuthRequest, res) => {
     try {
-      const { ruleId } = req.params;
+      const ruleId = paramToString((req.params as any).ruleId);
 
       const deleted = await realTimeMonitoring.deleteMonitoringRule(ruleId);
 
@@ -182,7 +196,7 @@ router.get(
   requireRole("ADMIN"),
   async (req: AuthRequest, res) => {
     try {
-      const severity = req.query.severity as any;
+      const severity = asSeverity(req.query.severity);
       const alerts = await realTimeMonitoring.getSystemAlerts(severity);
 
       res.json({
