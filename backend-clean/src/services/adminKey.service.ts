@@ -1,3 +1,4 @@
+import { logger } from "../lib/logger";
 /**
  * Admin Key Service - Advancia Pay Ledger
  * 
@@ -15,7 +16,7 @@ export class AdminKeyService {
     this.systemAdminKey = process.env.SYSTEM_ADMIN_KEY || '';
 
     if (!this.adminApiKey || !this.superAdminKey || !this.systemAdminKey) {
-      console.log('⚠️ Admin Key Service not fully configured - missing admin keys');
+      logger.info('⚠️ Admin Key Service not fully configured - missing admin keys');
     }
   }
 
@@ -195,7 +196,7 @@ export class AdminKeyService {
    */
   logAdminAction(key: string, action: string, resource: string, details?: any): void {
     const level = this.getAdminLevel(key);
-    console.log(`[ADMIN] ${level} - ${action} on ${resource}`, {
+    logger.info(`[ADMIN] ${level} - ${action} on ${resource}`, {
       timestamp: new Date().toISOString(),
       level,
       action,

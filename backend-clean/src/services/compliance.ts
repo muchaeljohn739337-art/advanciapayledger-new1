@@ -1,4 +1,5 @@
-import { logger } from '../middleware/errorHandler';
+import prisma from '../lib/prisma';
+import { logger } from "../lib/logger";
 
 // Compliance and regulatory service
 export class ComplianceService {
@@ -14,75 +15,137 @@ export class ComplianceService {
     'AF', 'BY', 'MM', 'CF', 'CD', 'IQ', 'LB', 'LY', 'SO', 'SS', 'VE', 'YE', 'ZW'
   ]);
 
+  // Basic name-based watchlist — supplement with OFAC/UN/EU API in production
+  private readonly nameWatchlist: string[] = [
+    'kim jong',
+    'ali khamenei',
+    'bashar al-assad',
+    'alexander lukashenko',
+    'nicolas maduro',
+  ];
+
+  // Helper to escalate status without downgrading a more severe state
+  private escalateStatus(
+    current: 'approved' | 'pending' | 'rejected',
+    next: 'approved' | 'pending' | 'rejected'
+  ): 'approved' | 'pending' | 'rejected' {
+    const priority = { rejected: 2, pending: 1, approved: 0 };
+    return priority[next] > priority[current] ? next : current;
+  }
+
   // KYC/AML compliance check
   async performKYCCheck(data: KYCData): Promise<KYCResult> {
     const checks: ComplianceCheck[] = [];
     let overallStatus: 'approved' | 'pending' | 'rejected' = 'approved';
     const issues: string[] = [];
 
-    // 1. Sanctions screening
-    const sanctionsCheck = await this.checkSanctions(data);
-    checks.push(sanctionsCheck);
-    if (!sanctionsCheck.passed) {
-      overallStatus = 'rejected';
-      issues.push('Sanctioned country or individual');
+    try {
+      // 1. Sanctions screening
+      const sanctionsCheck = await this.checkSanctions(data);
+      checks.push(sanctionsCheck);
+      if (!sanctionsCheck.passed) {
+        overallStatus = this.escalateStatus(overallStatus, 'rejected');
+        issues.push('Sanctioned country or individual');
+      }
+
+      // 2. Identity verification
+      const identityCheck = await this.verifyIdentity(data);
+      checks.push(identityCheck);
+      if (!identityCheck.passed) {
+        overallStatus = this.escalateStatus(overallStatus, 'pending');
+        issues.push('Identity verification required');
+      }
+
+      // 3. Address verification
+      const addressCheck = await this.verifyAddress(data);
+      checks.push(addressCheck);
+      if (!addressCheck.passed) {
+        overallStatus = this.escalateStatus(overallStatus, 'pending');
+        issues.push('Address verification required');
+      }
+
+      // 4. Age verification (18+)
+      const ageCheck = await this.verifyAge(data);
+      checks.push(ageCheck);
+      if (!ageCheck.passed) {
+        overallStatus = this.escalateStatus(overallStatus, 'rejected');
+        issues.push('Must be 18 years or older');
+      }
+
+      // 5. PEP (Politically Exposed Person) screening
+      const pepCheck = await this.checkPEP(data);
+      checks.push(pepCheck);
+      if (!pepCheck.passed) {
+        overallStatus = this.escalateStatus(overallStatus, 'pending');
+        issues.push('Enhanced due diligence required (PEP)');
+      }
+
+      // 6. Document verification
+      const documentCheck = await this.verifyDocuments(data);
+      checks.push(documentCheck);
+      if (!documentCheck.passed) {
+        overallStatus = this.escalateStatus(overallStatus, 'pending');
+        issues.push('Document verification required');
+      }
+
+      // 7. Source of funds — required when volume is high OR source is simply absent
+      const fundsCheck = await this.verifySourceOfFunds(data);
+      checks.push(fundsCheck);
+      if (!fundsCheck.passed) {
+        const volumeThreshold = data.expectedVolume !== undefined ? data.expectedVolume > 10000 : true;
+        if (volumeThreshold) {
+          overallStatus = this.escalateStatus(overallStatus, 'pending');
+          issues.push('Source of funds verification required');
+        }
+      }
+
+      // 8. Geographic restrictions
+      const geoCheck = await this.checkGeographicRestrictions(data.country);
+      checks.push(geoCheck);
+      if (!geoCheck.passed) {
+        overallStatus = this.escalateStatus(overallStatus, 'rejected');
+        issues.push('Geographic restrictions apply');
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      return {
+        status: 'rejected',
+        checks,
+        issues: [...issues, `Compliance check error: ${message}`],
+        riskLevel: 'high',
+        timestamp: new Date().toISOString(),
+      };
     }
 
-    // 2. Identity verification
-    const identityCheck = await this.verifyIdentity(data);
-    checks.push(identityCheck);
-    if (!identityCheck.passed) {
-      overallStatus = 'pending';
-      issues.push('Identity verification required');
-    }
-
-    // 3. Address verification
-    const addressCheck = await this.verifyAddress(data);
-    checks.push(addressCheck);
-    if (!addressCheck.passed) {
-      overallStatus = 'pending';
-      issues.push('Address verification required');
-    }
-
-    // 4. Age verification (18+)
-    const ageCheck = await this.verifyAge(data);
-    checks.push(ageCheck);
-    if (!ageCheck.passed) {
-      overallStatus = 'rejected';
-      issues.push('Must be 18 years or older');
-    }
-
-    // 5. PEP (Politically Exposed Person) screening
-    const pepCheck = await this.checkPEP(data);
-    checks.push(pepCheck);
-    if (!pepCheck.passed) {
-      overallStatus = 'pending';
-      issues.push('Enhanced due diligence required (PEP)');
-    }
-
-    // 6. Document verification
-    const documentCheck = await this.verifyDocuments(data);
-    checks.push(documentCheck);
-    if (!documentCheck.passed) {
-      overallStatus = 'pending';
-      issues.push('Document verification required');
-    }
-
-    // 7. Source of funds
-    const fundsCheck = await this.verifySourceOfFunds(data);
-    checks.push(fundsCheck);
-    if (!fundsCheck.passed && data.expectedVolume && data.expectedVolume > 10000) {
-      overallStatus = 'pending';
-      issues.push('Source of funds verification required');
-    }
-
-    return {
+    const result: KYCResult = {
       status: overallStatus,
       checks,
       issues,
       riskLevel: this.calculateRiskLevel(checks),
       timestamp: new Date().toISOString(),
     };
+
+    // Persist KYC outcome to User record when a userId is provided
+    if (data.userId) {
+      const kycStatusMap: Record<KYCResult['status'], 'APPROVED' | 'REJECTED' | 'UNDER_REVIEW'> = {
+        approved: 'APPROVED',
+        rejected: 'REJECTED',
+        pending: 'UNDER_REVIEW',
+      };
+      await prisma.user.update({
+        where: { id: data.userId },
+        data: {
+          kycStatus: kycStatusMap[overallStatus],
+          kycSubmittedAt: new Date(),
+          ...(overallStatus === 'approved' ? { kycApprovedAt: new Date() } : {}),
+        },
+      }).catch((dbErr: unknown) => {
+        // Non-fatal: log but do not fail the compliance response
+        logger.error('[ComplianceService] Failed to persist KYC result:', dbErr);
+      });
+    }
+
+    return result;
   }
 
   // Check sanctions lists
@@ -97,9 +160,21 @@ export class ComplianceService {
       };
     }
 
-    // In production: Check against OFAC, UN, EU sanctions lists
-    // Check name against sanctions databases
-    
+    // In production: Check against OFAC, UN, EU sanctions lists via API (e.g. ComplyAdvantage)
+    // Basic name watchlist check
+    if (data.firstName && data.lastName) {
+      const fullName = `${data.firstName} ${data.lastName}`.toLowerCase();
+      const nameMatch = this.nameWatchlist.some(entry => fullName.includes(entry));
+      if (nameMatch) {
+        return {
+          name: 'Sanctions Screening',
+          passed: false,
+          required: true,
+          details: 'Name matched internal watchlist — manual review required',
+        };
+      }
+    }
+
     return {
       name: 'Sanctions Screening',
       passed: true,
@@ -180,7 +255,15 @@ export class ComplianceService {
     // - World-Check
     // - Dow Jones Risk & Compliance
     // - ComplyAdvantage
-    
+    if (data.isPEP === true) {
+      return {
+        name: 'PEP Screening',
+        passed: false,
+        required: false,
+        details: 'Enhanced due diligence required — user self-declared as PEP',
+      };
+    }
+
     return {
       name: 'PEP Screening',
       passed: true,
@@ -200,10 +283,31 @@ export class ComplianceService {
       };
     }
 
+    // Check document expiry if provided
+    if (data.documentExpiryDate) {
+      const expiry = new Date(data.documentExpiryDate);
+      if (isNaN(expiry.getTime())) {
+        return {
+          name: 'Document Verification',
+          passed: false,
+          required: true,
+          details: 'Invalid document expiry date format',
+        };
+      }
+      if (expiry < new Date()) {
+        return {
+          name: 'Document Verification',
+          passed: false,
+          required: true,
+          details: 'Document has expired',
+        };
+      }
+    }
+
     // In production: Verify document authenticity
     // - OCR extraction
     // - Security features check
-    // - Expiry date validation
+    // - Expiry date validation via Onfido/Jumio/Veriff
 
     return {
       name: 'Document Verification',
@@ -234,11 +338,17 @@ export class ComplianceService {
 
   // Calculate risk level
   private calculateRiskLevel(checks: ComplianceCheck[]): 'low' | 'medium' | 'high' {
+    // A sanctions or geo-restriction failure is immediately high risk
+    const sanctionsFailed = checks.some(
+      c => (c.name === 'Sanctions Screening' || c.name === 'Geographic Restrictions') && !c.passed
+    );
+    if (sanctionsFailed) return 'high';
+
     const failedRequired = checks.filter(c => c.required && !c.passed).length;
     const failedOptional = checks.filter(c => !c.required && !c.passed).length;
 
     if (failedRequired > 0) return 'high';
-    if (failedOptional > 1) return 'medium';
+    if (failedOptional >= 1) return 'medium';
     return 'low';
   }
 
@@ -262,48 +372,63 @@ export class ComplianceService {
     let approved = true;
     const issues: string[] = [];
 
-    // 1. BIN validation
-    const binCheck = await this.validateBIN(cardData.bin);
-    checks.push(binCheck);
-    if (!binCheck.passed) {
-      approved = false;
-      issues.push('Invalid BIN or unsupported card network');
-    }
+    try {
+      // 1. BIN validation
+      const binCheck = await this.validateBIN(cardData.bin);
+      checks.push(binCheck);
+      if (!binCheck.passed) {
+        approved = false;
+        issues.push('Invalid BIN or unsupported card network');
+      }
 
-    // 2. Issuer verification
-    const issuerCheck = await this.verifyIssuer(cardData.bin);
-    checks.push(issuerCheck);
-    if (!issuerCheck.passed) {
-      approved = false;
-      issues.push('Issuer not supported or flagged');
-    }
+      // 2. Issuer verification
+      const issuerCheck = await this.verifyIssuer(cardData.bin);
+      checks.push(issuerCheck);
+      if (!issuerCheck.passed) {
+        approved = false;
+        issues.push('Issuer not supported or flagged');
+      }
 
-    // 3. Card type validation
-    const typeCheck = this.validateCardType(cardData.cardType);
-    checks.push(typeCheck);
-    if (!typeCheck.passed) {
-      approved = false;
-      issues.push('Card type not supported');
-    }
+      // 3. Card type validation
+      const typeCheck = this.validateCardType(cardData.cardType);
+      checks.push(typeCheck);
+      if (!typeCheck.passed) {
+        approved = false;
+        issues.push('Card type not supported');
+      }
 
-    // 4. Cardholder name validation
-    const nameCheck = this.validateCardholderName(cardData.cardholderName);
-    checks.push(nameCheck);
-    if (!nameCheck.passed) {
-      approved = false;
-      issues.push('Invalid cardholder name format');
-    }
+      // 4. Cardholder name validation
+      const nameCheck = this.validateCardholderName(cardData.cardholderName);
+      checks.push(nameCheck);
+      if (!nameCheck.passed) {
+        approved = false;
+        issues.push('Invalid cardholder name format');
+      }
 
-    // 5. Spending limits compliance
-    const limitsCheck = this.validateSpendingLimits(cardData.limits);
-    checks.push(limitsCheck);
+      // 5. Spending limits compliance
+      const limitsCheck = this.validateSpendingLimits(cardData.limits);
+      checks.push(limitsCheck);
+      if (!limitsCheck.passed) {
+        approved = false;
+        issues.push('Spending limits exceed allowed thresholds');
+      }
 
-    // 6. Geographic restrictions
-    const geoCheck = await this.checkGeographicRestrictions(cardData.country);
-    checks.push(geoCheck);
-    if (!geoCheck.passed) {
-      approved = false;
-      issues.push('Geographic restrictions apply');
+      // 6. Geographic restrictions
+      const geoCheck = await this.checkGeographicRestrictions(cardData.country);
+      checks.push(geoCheck);
+      if (!geoCheck.passed) {
+        approved = false;
+        issues.push('Geographic restrictions apply');
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      return {
+        approved: false,
+        checks,
+        issues: [...issues, `Compliance check error: ${message}`],
+        bankAcceptance: 'rejected',
+        timestamp: new Date().toISOString(),
+      };
     }
 
     return {
@@ -331,10 +456,17 @@ export class ComplianceService {
     // - Check issuing bank
     // - Validate card level (Classic, Gold, Platinum)
 
-    const firstDigit = bin[0];
-    const validNetworks = ['4', '5', '3', '6']; // Visa, MC, Amex, Discover
+    // Determine card network with proper prefix matching
+    const isVisa       = bin.startsWith('4');
+    const isMastercard = /^5[1-5]/.test(bin) || /^2(2[2-9][1-9]|[3-6]\d{2}|7[01]\d|720)/.test(bin);
+    const isAmex       = bin.startsWith('34') || bin.startsWith('37');
+    const isDiscover   = bin.startsWith('6011') || bin.startsWith('65') || /^64[4-9]/.test(bin);
+    const isDiners     = bin.startsWith('300') || bin.startsWith('305') || bin.startsWith('36') || bin.startsWith('38');
+    const isJCB        = /^35(2[89]|[3-8]\d)/.test(bin);
 
-    if (!validNetworks.includes(firstDigit)) {
+    const isSupported = isVisa || isMastercard || isAmex || isDiscover || isDiners || isJCB;
+
+    if (!isSupported) {
       return {
         name: 'BIN Validation',
         passed: false,
@@ -569,6 +701,7 @@ export class ComplianceService {
 
 // Types
 interface KYCData {
+  userId?: string;           // When provided, result is persisted to User record
   firstName: string;
   lastName: string;
   dateOfBirth?: string;
@@ -578,8 +711,10 @@ interface KYCData {
   postalCode?: string;
   documentType?: string;
   documentNumber?: string;
+  documentExpiryDate?: string; // ISO date string — triggers expiry validation when provided
   sourceOfFunds?: string;
   expectedVolume?: number;
+  isPEP?: boolean;           // Self-declared politically exposed person flag
 }
 
 interface KYCResult {

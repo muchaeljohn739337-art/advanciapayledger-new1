@@ -2,6 +2,7 @@ import { Router } from "express";
 import { authenticate, AuthRequest, requireRole } from "../../middleware/auth";
 import { adminAnalytics } from "../../services/adminAnalytics";
 import { prisma } from "../../lib/prisma";
+import { logger } from "../../lib/logger";
 
 const router = Router();
 
@@ -25,7 +26,7 @@ router.get(
         generatedAt: new Date().toISOString(),
       });
     } catch (error) {
-      console.error("Get analytics error:", error);
+      logger.error("Get analytics error:", error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -48,7 +49,7 @@ router.get(
         data: realTimeMetrics,
       });
     } catch (error) {
-      console.error("Get real-time metrics error:", error);
+      logger.error("Get real-time metrics error:", error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -81,7 +82,7 @@ router.get(
         dateRange,
       });
     } catch (error) {
-      console.error("Get overview analytics error:", error);
+      logger.error("Get overview analytics error:", error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -113,7 +114,7 @@ router.get(
         dateRange,
       });
     } catch (error) {
-      console.error("Get transaction analytics error:", error);
+      logger.error("Get transaction analytics error:", error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -142,7 +143,7 @@ router.get(
         dateRange,
       });
     } catch (error) {
-      console.error("Get user analytics error:", error);
+      logger.error("Get user analytics error:", error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -171,7 +172,7 @@ router.get(
         dateRange,
       });
     } catch (error) {
-      console.error("Get fraud analytics error:", error);
+      logger.error("Get fraud analytics error:", error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -203,7 +204,7 @@ router.get(
         dateRange,
       });
     } catch (error) {
-      console.error("Get financial analytics error:", error);
+      logger.error("Get financial analytics error:", error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -235,7 +236,7 @@ router.get(
         dateRange,
       });
     } catch (error) {
-      console.error("Get performance analytics error:", error);
+      logger.error("Get performance analytics error:", error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -287,7 +288,7 @@ router.get(
         });
       }
     } catch (error) {
-      console.error("Export analytics error:", error);
+      logger.error("Export analytics error:", error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -379,7 +380,7 @@ router.get(
         data: summary,
       });
     } catch (error) {
-      console.error("Get dashboard summary error:", error);
+      logger.error("Get dashboard summary error:", error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",

@@ -6,14 +6,17 @@ import {
   testEmailProviders,
   getEmailProviderStatus,
 } from "../lib/emailService";
+import { logger } from "../lib/logger";
+import { authenticate } from "../middleware/auth";
+import { authenticateAdminKey } from "../middleware/adminAuth";
 
 const router = express.Router();
 
 /**
  * GET /api/email/status
- * Get email service provider status
+ * Get email service provider status (admin only)
  */
-router.get("/status", async (req: Request, res: Response) => {
+router.get("/status", authenticateAdminKey, async (req: Request, res: Response) => {
   try {
     const status = getEmailProviderStatus();
     res.json({
@@ -22,16 +25,16 @@ router.get("/status", async (req: Request, res: Response) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("Email status error:", error);
+    logger.error("Email status error:", error);
     res.status(500).json({ error: "Failed to get email status" });
   }
 });
 
 /**
  * POST /api/email/test
- * Test all configured email providers
+ * Test all configured email providers (admin only)
  */
-router.post("/test", async (req: Request, res: Response) => {
+router.post("/test", authenticateAdminKey, async (req: Request, res: Response) => {
   try {
     const results = await testEmailProviders();
     res.json({
@@ -40,7 +43,7 @@ router.post("/test", async (req: Request, res: Response) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("Email test error:", error);
+    logger.error("Email test error:", error);
     res.status(500).json({ error: "Failed to test email providers" });
   }
 });
@@ -49,7 +52,7 @@ router.post("/test", async (req: Request, res: Response) => {
  * POST /api/email/send
  * Send email with optional provider preference
  */
-router.post("/send", async (req: Request, res: Response) => {
+router.post("/send", authenticate, async (req: Request, res: Response) => {
   try {
     const { to, subject, html, text, from, provider, attachments } = req.body;
 
@@ -85,7 +88,7 @@ router.post("/send", async (req: Request, res: Response) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("Email send error:", error);
+    logger.error("Email send error:", error);
     res.status(500).json({
       error: "Failed to send email",
       details: error instanceof Error ? error.message : "Unknown error",
@@ -97,7 +100,7 @@ router.post("/send", async (req: Request, res: Response) => {
  * POST /api/email/send-batch
  * Send batch emails (for newsletters, etc.)
  */
-router.post("/send-batch", async (req: Request, res: Response) => {
+router.post("/send-batch", authenticate, async (req: Request, res: Response) => {
   try {
     const {
       recipients,
@@ -178,7 +181,7 @@ router.post("/send-batch", async (req: Request, res: Response) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("Batch email send error:", error);
+    logger.error("Batch email send error:", error);
     res.status(500).json({
       error: "Failed to send batch emails",
       details: error instanceof Error ? error.message : "Unknown error",
@@ -190,7 +193,7 @@ router.post("/send-batch", async (req: Request, res: Response) => {
  * POST /api/email/template
  * Send email using predefined template
  */
-router.post("/template", async (req: Request, res: Response) => {
+router.post("/template", authenticate, async (req: Request, res: Response) => {
   try {
     const { template, to, data = {}, from, provider } = req.body;
 
@@ -333,7 +336,7 @@ router.post("/template", async (req: Request, res: Response) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("Template email error:", error);
+    logger.error("Template email error:", error);
     res.status(500).json({
       error: "Failed to send template email",
       details: error instanceof Error ? error.message : "Unknown error",

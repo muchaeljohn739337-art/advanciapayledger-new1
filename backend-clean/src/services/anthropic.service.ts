@@ -1,3 +1,4 @@
+import { logger } from "../lib/logger";
 /**
  * Anthropic AI Service - Advancia Pay Ledger
  * 
@@ -17,9 +18,9 @@ export class AnthropicService {
     this.temperature = parseFloat(process.env.ANTHROPIC_TEMPERATURE || '0.7');
 
     if (!this.apiKey) {
-      console.log('⚠️ Anthropic Service not configured - missing API key');
+      logger.info('⚠️ Anthropic Service not configured - missing API key');
     } else {
-      console.log('✅ Anthropic Service initialized with Claude');
+      logger.info('✅ Anthropic Service initialized with Claude');
     }
   }
 
@@ -62,7 +63,7 @@ export class AnthropicService {
       const data = await response.json();
       return data.content[0]?.text || '';
     } catch (error: any) {
-      console.error('Anthropic chat completion error:', error);
+      logger.error('Anthropic chat completion error:', error);
       throw new Error(`Chat completion failed: ${error.message}`);
     }
   }

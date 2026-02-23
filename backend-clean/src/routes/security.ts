@@ -1,7 +1,9 @@
 import { Router } from 'express';
 import { securityConfigService } from '../services/security/securityConfig';
+import { logger } from "../lib/logger";
 // import { aiAgentSecurityController } from '../services/ai/security/agentSecurityController';
 import { leakDetectionService } from '../services/security/leak-detection/leakDetectionService';
+import { authenticateAdminKey } from '../middleware/adminAuth';
 
 const aiAgentSecurityController = {
   registerAgent: (_agentId: string, _agentType: string, _capabilities: any) => false,
@@ -18,6 +20,9 @@ const aiAgentSecurityController = {
 };
 
 const router = Router();
+
+// All security routes require admin authentication
+router.use(authenticateAdminKey);
 
 // Get overall security status
 router.get('/status', async (req, res) => {
@@ -36,7 +41,7 @@ router.get('/status', async (req, res) => {
       timestamp: new Date()
     });
   } catch (error) {
-    console.error('Failed to get security status:', error);
+    logger.error('Failed to get security status:', error);
     res.status(500).json({ error: 'Failed to get security status' });
   }
 });
@@ -55,7 +60,7 @@ router.get('/leaks', async (req, res) => {
       total: reports.length
     });
   } catch (error) {
-    console.error('Failed to get leak reports:', error);
+    logger.error('Failed to get leak reports:', error);
     res.status(500).json({ error: 'Failed to get leak reports' });
   }
 });
@@ -71,7 +76,7 @@ router.get('/leaks/critical', async (req, res) => {
       total: reports.length
     });
   } catch (error) {
-    console.error('Failed to get critical leaks:', error);
+    logger.error('Failed to get critical leaks:', error);
     res.status(500).json({ error: 'Failed to get critical leaks' });
   }
 });
@@ -86,7 +91,7 @@ router.post('/scan', async (req, res) => {
       message: 'Security scan initiated'
     });
   } catch (error) {
-    console.error('Failed to start security scan:', error);
+    logger.error('Failed to start security scan:', error);
     res.status(500).json({ error: 'Failed to start security scan' });
   }
 });
@@ -101,7 +106,7 @@ router.delete('/leaks', async (req, res) => {
       message: 'Leak reports cleared'
     });
   } catch (error) {
-    console.error('Failed to clear leak reports:', error);
+    logger.error('Failed to clear leak reports:', error);
     res.status(500).json({ error: 'Failed to clear leak reports' });
   }
 });
@@ -125,7 +130,7 @@ router.post('/ai/agents/register', async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('Failed to register AI agent:', error);
+    logger.error('Failed to register AI agent:', error);
     res.status(500).json({ error: 'Failed to register AI agent' });
   }
 });
@@ -149,7 +154,7 @@ router.delete('/ai/agents/:agentId', async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('Failed to unregister AI agent:', error);
+    logger.error('Failed to unregister AI agent:', error);
     res.status(500).json({ error: 'Failed to unregister AI agent' });
   }
 });
@@ -166,7 +171,7 @@ router.post('/ai/agents/validate', async (req, res) => {
       validation
     });
   } catch (error) {
-    console.error('Failed to validate AI agent operation:', error);
+    logger.error('Failed to validate AI agent operation:', error);
     res.status(500).json({ error: 'Failed to validate AI agent operation' });
   }
 });
@@ -183,7 +188,7 @@ router.post('/ai/llm/validate-prompt', async (req, res) => {
       validation
     });
   } catch (error) {
-    console.error('Failed to validate LLM prompt:', error);
+    logger.error('Failed to validate LLM prompt:', error);
     res.status(500).json({ error: 'Failed to validate LLM prompt' });
   }
 });
@@ -200,7 +205,7 @@ router.post('/ai/llm/sanitize-response', async (req, res) => {
       sanitized
     });
   } catch (error) {
-    console.error('Failed to sanitize LLM response:', error);
+    logger.error('Failed to sanitize LLM response:', error);
     res.status(500).json({ error: 'Failed to sanitize LLM response' });
   }
 });

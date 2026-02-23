@@ -1,5 +1,6 @@
 import prisma from "../lib/prisma";
 import { emailService } from "./emailService";
+import { logger } from "../lib/logger";
 
 /**
  * Admin Notification Service
@@ -16,7 +17,7 @@ class AdminNotificationService {
       });
 
       if (!user) {
-        console.error(
+        logger.error(
           `[ADMIN-NOTIFY] User not found for notification: ${userId}`
         );
         return;
@@ -33,7 +34,7 @@ class AdminNotificationService {
       });
 
       if (admins.length === 0) {
-        console.log("[ADMIN-NOTIFY] No active admins found to notify");
+        logger.info("[ADMIN-NOTIFY] No active admins found to notify");
         return;
       }
 
@@ -52,11 +53,11 @@ class AdminNotificationService {
             approvalUrl,
           });
 
-          console.log(
+          logger.info(
             `[ADMIN-NOTIFY] Notification sent to admin ${admin.email}`
           );
         } catch (emailError) {
-          console.error(
+          logger.error(
             `[ADMIN-NOTIFY] Failed to send notification to ${admin.email}:`,
             emailError
           );
@@ -79,11 +80,11 @@ class AdminNotificationService {
         },
       });
 
-      console.log(
+      logger.info(
         `[ADMIN-NOTIFY] Notified ${admins.length} admins about new registration: ${user.email}`
       );
     } catch (error) {
-      console.error("[ADMIN-NOTIFY] Error in notifyNewRegistration:", error);
+      logger.error("[ADMIN-NOTIFY] Error in notifyNewRegistration:", error);
     }
   }
 
@@ -196,7 +197,7 @@ class AdminNotificationService {
       });
 
       if (pendingUsers.length === 0) {
-        console.log("[ADMIN-NOTIFY] No pending approvals for digest");
+        logger.info("[ADMIN-NOTIFY] No pending approvals for digest");
         return;
       }
 
@@ -224,20 +225,20 @@ class AdminNotificationService {
             dashboardUrl: `${frontendUrl}/admin/users?status=pending`,
           });
 
-          console.log(`[ADMIN-NOTIFY] Digest sent to admin ${admin.email}`);
+          logger.info(`[ADMIN-NOTIFY] Digest sent to admin ${admin.email}`);
         } catch (emailError) {
-          console.error(
+          logger.error(
             `[ADMIN-NOTIFY] Failed to send digest to ${admin.email}:`,
             emailError
           );
         }
       }
 
-      console.log(
+      logger.info(
         `[ADMIN-NOTIFY] Sent pending approval digest to ${admins.length} admins`
       );
     } catch (error) {
-      console.error("[ADMIN-NOTIFY] Error in sendPendingApprovalDigest:", error);
+      logger.error("[ADMIN-NOTIFY] Error in sendPendingApprovalDigest:", error);
     }
   }
 

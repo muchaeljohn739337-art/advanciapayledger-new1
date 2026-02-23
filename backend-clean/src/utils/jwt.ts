@@ -11,8 +11,11 @@ export interface JWTPayload {
   role: string;
 }
 
-export function signToken(payload: JWTPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+export function signToken(
+  payload: JWTPayload,
+  expiresIn: jwt.SignOptions["expiresIn"] = JWT_EXPIRES_IN
+): string {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn });
 }
 
 export function signRefreshToken(payload: JWTPayload): string {

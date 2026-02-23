@@ -1,5 +1,6 @@
 import { prisma } from "../lib/prisma";
 import { ethers } from "ethers";
+import { logger } from "../lib/logger";
 
 export interface SmartContract {
   id: string;
@@ -142,7 +143,7 @@ export class BlockchainService {
       if (network.isActive) {
         try {
           if (!network.rpcUrl || this.isPlaceholderRpcUrl(network.rpcUrl)) {
-            console.warn(
+            logger.warn(
               `Skipping ${network.name} RPC initialization (RPC URL not configured). Set env var for this network to enable blockchain monitoring.`
             );
             continue;
@@ -154,9 +155,9 @@ export class BlockchainService {
 
           // Test connection
           await provider.getNetwork();
-          console.log(`Connected to ${network.name}`);
+          logger.info(`Connected to ${network.name}`);
         } catch (error) {
-          console.error(`Failed to connect to ${network.name}:`, error);
+          logger.error(`Failed to connect to ${network.name}:`, error);
         }
       }
     }
@@ -182,7 +183,7 @@ export class BlockchainService {
           await this.processBlockTransactions(latestBlock, networkName);
         }
       } catch (error) {
-        console.error(`Error monitoring blocks for ${networkName}:`, error);
+        logger.error(`Error monitoring blocks for ${networkName}:`, error);
       }
     }
   }
@@ -201,7 +202,7 @@ export class BlockchainService {
           await this.storeTransaction(tx, receipt, networkName);
         }
       } catch (error) {
-        console.error(`Error processing transaction ${txHash}:`, error);
+        logger.error(`Error processing transaction ${txHash}:`, error);
       }
     }
   }
@@ -252,9 +253,9 @@ export class BlockchainService {
         },
       });
 
-      console.log(`Stored transaction: ${tx.hash} on ${networkName}`);
+      logger.info(`Stored transaction: ${tx.hash} on ${networkName}`);
     } catch (error) {
-      console.error("Error storing transaction:", error);
+      logger.error("Error storing transaction:", error);
     }
   }
 
@@ -360,12 +361,12 @@ export class BlockchainService {
         contract as unknown as ethers.Contract
       );
 
-      console.log(
+      logger.info(
         `Contract deployed: ${smartContract.address} on ${networkName}`
       );
       return smartContract;
     } catch (error) {
-      console.error("Error deploying contract:", error);
+      logger.error("Error deploying contract:", error);
       throw error;
     }
   }
@@ -496,7 +497,7 @@ export class BlockchainService {
 
       return blockchainTx;
     } catch (error) {
-      console.error("Error tracking transaction:", error);
+      logger.error("Error tracking transaction:", error);
       throw error;
     }
   }
@@ -541,7 +542,7 @@ export class BlockchainService {
         metadata: null,
       }));
     } catch (error) {
-      console.error("Error getting transaction history:", error);
+      logger.error("Error getting transaction history:", error);
       return [];
     }
   }
@@ -595,7 +596,7 @@ export class BlockchainService {
         period: `${days} days`,
       };
     } catch (error) {
-      console.error("Error getting blockchain analytics:", error);
+      logger.error("Error getting blockchain analytics:", error);
       return null;
     }
   }
@@ -630,7 +631,7 @@ export class BlockchainService {
         lastUpdated: new Date(),
       };
     } catch (error) {
-      console.error(`Error getting network status for ${networkName}:`, error);
+      logger.error(`Error getting network status for ${networkName}:`, error);
       return {
         name: networkName,
         isConnected: false,
@@ -677,7 +678,7 @@ export class BlockchainService {
         events: receipt.logs,
       };
     } catch (error) {
-      console.error(`Error calling contract method ${methodName}:`, error);
+      logger.error(`Error calling contract method ${methodName}:`, error);
       throw error;
     }
   }
@@ -706,7 +707,7 @@ export class BlockchainService {
         contractType: "CUSTOM",
       }));
     } catch (error) {
-      console.error("Error getting smart contracts:", error);
+      logger.error("Error getting smart contracts:", error);
       return [];
     }
   }
@@ -744,7 +745,7 @@ export class BlockchainService {
         },
       ];
     } catch (error) {
-      console.error(`Error getting token balances for ${address}:`, error);
+      logger.error(`Error getting token balances for ${address}:`, error);
       return [];
     }
   }
@@ -769,7 +770,7 @@ export class BlockchainService {
 
       return gasEstimate.toString();
     } catch (error) {
-      console.error("Error estimating gas:", error);
+      logger.error("Error estimating gas:", error);
       throw error;
     }
   }

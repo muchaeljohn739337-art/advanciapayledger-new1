@@ -5,59 +5,64 @@
  */
 
 import cron, { type ScheduledTask } from 'node-cron';
+import { logger } from "../lib/logger";
 
 export class CronService {
   private jobs: Map<string, ScheduledTask> = new Map();
 
   constructor() {
-    console.log('[CRON] Cron service initialized');
+    logger.info('[CRON] Cron service initialized');
   }
 
   /**
    * Start all cron jobs
    */
   startAll(): void {
-    console.log('[CRON] Starting all cron jobs...');
+    logger.info('[CRON] Starting all cron jobs...');
     
     // Add cron jobs here as needed
-    console.log('[CRON] All cron services started successfully');
+    logger.info('[CRON] All cron services started successfully');
   }
 
   /**
    * Stop all cron jobs
    */
   stopAll(): void {
-    console.log('[CRON] Stopping all cron jobs...');
+    logger.info('[CRON] Stopping all cron jobs...');
     
     this.jobs.forEach((job, name) => {
       job.stop();
-      console.log(`[CRON] Stopped job: ${name}`);
+      logger.info(`[CRON] Stopped job: ${name}`);
     });
     
     this.jobs.clear();
-    console.log('[CRON] All cron jobs stopped');
+    logger.info('[CRON] All cron jobs stopped');
   }
 
   /**
    * Add a new cron job
    */
   addJob(name: string, schedule: string, callback: () => Promise<void>): void {
+    if (!cron.validate(schedule)) {
+      throw new Error(`[CRON] Invalid cron expression for job "${name}": ${schedule}`);
+    }
+
     if (this.jobs.has(name)) {
-      console.log(`[CRON] Job ${name} already exists, stopping it first`);
+      logger.info(`[CRON] Job ${name} already exists, stopping it first`);
       this.jobs.get(name)?.stop();
     }
 
     const job = cron.schedule(schedule, async () => {
-      console.log(`[CRON] Running job: ${name}`);
+      logger.info(`[CRON] Running job: ${name}`);
       try {
         await callback();
       } catch (error) {
-        console.error(`[CRON] Job ${name} failed:`, error);
+        logger.error(`[CRON] Job ${name} failed:`, error);
       }
     });
 
     this.jobs.set(name, job);
-    console.log(`[CRON] Added job: ${name} with schedule: ${schedule}`);
+    logger.info(`[CRON] Added job: ${name} with schedule: ${schedule}`);
   }
 
   /**
@@ -68,7 +73,7 @@ export class CronService {
     if (job) {
       job.stop();
       this.jobs.delete(name);
-      console.log(`[CRON] Removed job: ${name}`);
+      logger.info(`[CRON] Removed job: ${name}`);
     }
   }
 
@@ -78,7 +83,7 @@ export class CronService {
   getJobStatus(): Array<{ name: string; running: boolean }> {
     return Array.from(this.jobs.entries()).map(([name, job]) => ({
       name,
-      running: Boolean((job as any).running ?? true)
+      running: Boolean((job as any).running ?? false)
     }));
   }
 }

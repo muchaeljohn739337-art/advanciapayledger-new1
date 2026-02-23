@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { healthCheck, featureFlags, autoRecovery } from '../middleware/resilience';
 import { circuitBreakers } from '../utils/circuitBreaker';
+import { authenticateAdminKey } from '../middleware/adminAuth';
 import os from 'os';
 
 const router = Router();
@@ -183,8 +184,8 @@ router.get('/service/:serviceName', async (req: Request, res: Response) => {
   }
 });
 
-// Trigger recovery for a service
-router.post('/recover/:serviceName', async (req: Request, res: Response) => {
+// Trigger recovery for a service (admin only)
+router.post('/recover/:serviceName', authenticateAdminKey, async (req: Request, res: Response) => {
   const serviceName = paramToString((req.params as any).serviceName);
 
   try {
@@ -205,8 +206,8 @@ router.post('/recover/:serviceName', async (req: Request, res: Response) => {
   }
 });
 
-// Reset circuit breaker
-router.post('/circuit-breaker/:service/reset', (req: Request, res: Response) => {
+// Reset circuit breaker (admin only)
+router.post('/circuit-breaker/:service/reset', authenticateAdminKey, (req: Request, res: Response) => {
   const service = paramToString((req.params as any).service);
 
   const breaker = (circuitBreakers as any)[service];
@@ -227,8 +228,8 @@ router.post('/circuit-breaker/:service/reset', (req: Request, res: Response) => 
   });
 });
 
-// Enable/disable feature
-router.post('/feature/:featureName/:action', (req: Request, res: Response) => {
+// Enable/disable feature (admin only)
+router.post('/feature/:featureName/:action', authenticateAdminKey, (req: Request, res: Response) => {
   const featureName = paramToString((req.params as any).featureName);
   const action = paramToString((req.params as any).action);
 

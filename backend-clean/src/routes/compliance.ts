@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { compliance } from '../services/compliance';
-import { authenticate } from '../middleware/auth';
+import { authenticate, AuthRequest } from '../middleware/auth';
 import { validate } from '../utils/validation';
 import { z } from 'zod';
 
@@ -17,8 +17,10 @@ const kycVerificationSchema = z.object({
   postalCode: z.string().optional(),
   documentType: z.enum(['passport', 'drivers_license', 'national_id']).optional(),
   documentNumber: z.string().optional(),
+  documentExpiryDate: z.string().optional(),
   sourceOfFunds: z.string().optional(),
   expectedVolume: z.number().optional(),
+  isPEP: z.boolean().optional(),
 });
 
 // Card compliance schema
@@ -34,9 +36,13 @@ const cardComplianceSchema = z.object({
 });
 
 // Perform KYC check
-router.post('/kyc/verify', authenticate, validate(kycVerificationSchema), async (req: Request, res: Response) => {
+router.post('/kyc/verify', authenticate, validate(kycVerificationSchema), async (req: AuthRequest, res: Response) => {
   try {
-    const result = await compliance.performKYCCheck(req.body);
+    // Inject authenticated userId so the result is persisted to the User record
+    const result = await compliance.performKYCCheck({
+      ...req.body,
+      userId: req.user?.userId,
+    });
 
     res.json({
       success: result.status === 'approved',
@@ -44,8 +50,9 @@ router.post('/kyc/verify', authenticate, validate(kycVerificationSchema), async 
       checks: result.checks,
       issues: result.issues,
       riskLevel: result.riskLevel,
-      message: result.status === 'approved' 
-        ? 'KYC verification passed' 
+      timestamp: result.timestamp,
+      message: result.status === 'approved'
+        ? 'KYC verification passed'
         : result.status === 'pending'
         ? 'Additional verification required'
         : 'KYC verification failed',
@@ -59,7 +66,7 @@ router.post('/kyc/verify', authenticate, validate(kycVerificationSchema), async 
 });
 
 // Check card compliance for bank acceptance
-router.post('/card/verify', authenticate, validate(cardComplianceSchema), async (req: Request, res: Response) => {
+router.post('/card/verify', authenticate, validate(cardComplianceSchema), async (req: AuthRequest, res: Response) => {
   try {
     const result = await compliance.checkCardCompliance(req.body);
 
@@ -69,8 +76,9 @@ router.post('/card/verify', authenticate, validate(cardComplianceSchema), async 
       bankAcceptance: result.bankAcceptance,
       checks: result.checks,
       issues: result.issues,
-      message: result.approved 
-        ? 'Card compliant and accepted by banks' 
+      timestamp: result.timestamp,
+      message: result.approved
+        ? 'Card compliant and accepted by banks'
         : 'Card compliance issues detected',
     });
   } catch (error) {

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { authenticate, AuthRequest, requireRole } from "../../middleware/auth";
 import { blockchainService } from "../../services/blockchainService";
 import { prisma } from "../../lib/prisma";
+import { logger } from "../../lib/logger";
 
 const router = Router();
 
@@ -20,7 +21,7 @@ router.get("/networks", authenticate, async (req: AuthRequest, res) => {
       data: networks,
     });
   } catch (error) {
-    console.error("Get networks error:", error);
+    logger.error("Get networks error:", error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -43,7 +44,7 @@ router.get(
         data: status,
       });
     } catch (error) {
-      console.error("Get network status error:", error);
+      logger.error("Get network status error:", error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -90,7 +91,7 @@ router.post(
         message: "Contract deployed successfully",
       });
     } catch (error) {
-      console.error("Deploy contract error:", error);
+      logger.error("Deploy contract error:", error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -136,7 +137,7 @@ router.post(
         message: "Contract method called successfully",
       });
     } catch (error) {
-      console.error("Call contract method error:", error);
+      logger.error("Call contract method error:", error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -158,7 +159,7 @@ router.get("/contracts", authenticate, async (req: AuthRequest, res) => {
       data: contracts,
     });
   } catch (error) {
-    console.error("Get contracts error:", error);
+    logger.error("Get contracts error:", error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -191,7 +192,7 @@ router.get(
         },
       });
     } catch (error) {
-      console.error("Get contract details error:", error);
+      logger.error("Get contract details error:", error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -226,7 +227,7 @@ router.post(
         message: "Transaction tracked successfully",
       });
     } catch (error) {
-      console.error("Track transaction error:", error);
+      logger.error("Track transaction error:", error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -277,7 +278,7 @@ router.get(
         count: transactions.length,
       });
     } catch (error) {
-      console.error("Get transaction history error:", error);
+      logger.error("Get transaction history error:", error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -323,7 +324,7 @@ router.get("/wallet/balances", authenticate, async (req: AuthRequest, res) => {
       network: networkName,
     });
   } catch (error) {
-    console.error("Get token balances error:", error);
+    logger.error("Get token balances error:", error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -363,7 +364,7 @@ router.post("/gas/estimate", authenticate, async (req: AuthRequest, res) => {
       },
     });
   } catch (error) {
-    console.error("Estimate gas error:", error);
+    logger.error("Estimate gas error:", error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -396,7 +397,7 @@ router.post(
         },
       });
     } catch (error) {
-      console.error("Validate address error:", error);
+      logger.error("Validate address error:", error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -422,7 +423,7 @@ router.get(
         data: analytics,
       });
     } catch (error) {
-      console.error("Get blockchain analytics error:", error);
+      logger.error("Get blockchain analytics error:", error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -459,7 +460,7 @@ router.post(
         },
       });
     } catch (error) {
-      console.error("Subscribe to events error:", error);
+      logger.error("Subscribe to events error:", error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -501,7 +502,7 @@ router.get(
         },
       });
     } catch (error) {
-      console.error("Get admin transactions error:", error);
+      logger.error("Get admin transactions error:", error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -543,7 +544,7 @@ router.get(
         },
       });
     } catch (error) {
-      console.error("Get admin contracts error:", error);
+      logger.error("Get admin contracts error:", error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",

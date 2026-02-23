@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { getQueryString } from '../utils/queryHelpers';
+import { logger } from '../lib/logger';
 
 const router = Router();
 
@@ -169,7 +170,7 @@ router.get('/:bin', async (req: Request, res: Response) => {
     });
 
   } catch (error) {
-    console.error('BIN checker error:', error);
+    logger.error('BIN checker error:', error);
     return res.status(500).json({
       valid: false,
       error: 'Failed to check BIN. Please try again.'
@@ -189,7 +190,7 @@ router.get('/google-ads/optimized', async (req: Request, res: Response) => {
       bins: optimizedBins
     });
   } catch (error) {
-    console.error('Error fetching Google Ads BINs:', error);
+    logger.error('Error fetching Google Ads BINs:', error);
     return res.status(500).json({
       error: 'Failed to fetch optimized BINs'
     });

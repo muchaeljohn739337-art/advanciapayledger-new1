@@ -9,7 +9,9 @@ import {
 } from "../utils/password";
 import { emailService } from "../services/emailService";
 import { adminNotificationService } from "../services/adminNotification.service";
+import { blacklistToken, isBlacklisted } from "../utils/tokenBlacklist";
 import crypto from "crypto";
+import { logger } from "../lib/logger";
 
 const router = Router();
 
@@ -79,18 +81,18 @@ router.post("/register", async (req: Request, res: Response) => {
         user.firstName,
         emailVerificationToken
       );
-      console.log(`[REGISTRATION] Welcome email sent to ${user.email}`);
+      logger.info(`[REGISTRATION] Welcome email sent to ${user.email}`);
     } catch (emailError) {
-      console.error("[REGISTRATION] Failed to send welcome email:", emailError);
+      logger.error("[REGISTRATION] Failed to send welcome email:", emailError);
       // Don't fail registration if email fails
     }
 
     // Notify admins about new registration
     try {
       await adminNotificationService.notifyNewRegistration(user.id);
-      console.log(`[REGISTRATION] Admin notification sent for ${user.email}`);
+      logger.info(`[REGISTRATION] Admin notification sent for ${user.email}`);
     } catch (notifyError) {
-      console.error("[REGISTRATION] Failed to notify admins:", notifyError);
+      logger.error("[REGISTRATION] Failed to notify admins:", notifyError);
       // Don't fail registration if notification fails
     }
 
@@ -102,7 +104,7 @@ router.post("/register", async (req: Request, res: Response) => {
       requiresApproval: true,
     });
   } catch (error: any) {
-    console.error("Registration error:", error);
+    logger.error("Registration error:", error);
     res.status(500).json({ error: "Failed to register user" });
   }
 });
@@ -199,7 +201,7 @@ router.post("/login", async (req: Request, res: Response) => {
       user: userWithoutPassword,
     });
   } catch (error: any) {
-    console.error("Login error:", error);
+    logger.error("Login error:", error);
     res.status(500).json({ error: "Failed to login" });
   }
 });
@@ -211,6 +213,12 @@ router.post("/refresh", async (req: Request, res: Response) => {
 
     if (!refreshToken) {
       res.status(400).json({ error: "Refresh token is required" });
+      return;
+    }
+
+    // Reject blacklisted refresh tokens (i.e., after logout)
+    if (isBlacklisted(refreshToken)) {
+      res.status(401).json({ error: "Refresh token has been revoked" });
       return;
     }
 
@@ -232,17 +240,37 @@ router.post("/refresh", async (req: Request, res: Response) => {
   }
 });
 
-// Logout (client-side token removal, but we can log it)
+// Logout — revoke both access and refresh tokens so neither can be reused
 router.post(
   "/logout",
   authenticate,
   async (req: AuthRequest, res: Response) => {
     try {
-      // In a production app, you might want to blacklist the token
-      // For now, we'll just return success
+      // Blacklist the access token
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        const token = authHeader.substring(7);
+        try {
+          const payload = verifyToken(token);
+          const expiry = (payload as any).exp ?? Math.floor(Date.now() / 1000) + 86400;
+          blacklistToken(token, expiry);
+        } catch { /* already invalid */ }
+      }
+
+      // Blacklist the refresh token if supplied
+      const { refreshToken } = req.body;
+      if (refreshToken) {
+        try {
+          const refreshPayload = verifyToken(refreshToken);
+          const refreshExpiry = (refreshPayload as any).exp ?? Math.floor(Date.now() / 1000) + 7 * 86400;
+          blacklistToken(refreshToken, refreshExpiry);
+        } catch { /* already invalid or expired */ }
+      }
+
       res.json({ message: "Logout successful" });
     } catch (error: any) {
-      res.status(500).json({ error: "Failed to logout" });
+      // Even on error, report success — token is already considered invalid
+      res.json({ message: "Logout successful" });
     }
   }
 );
@@ -267,7 +295,7 @@ router.get("/me", authenticate, async (req: AuthRequest, res: Response) => {
     const { password: _, ...userWithoutPassword } = user;
     res.json({ user: userWithoutPassword });
   } catch (error: any) {
-    console.error("Get user error:", error);
+    logger.error("Get user error:", error);
     res.status(500).json({ error: "Failed to get user" });
   }
 });
@@ -286,12 +314,27 @@ router.post("/reset-password-request", async (req: Request, res: Response) => {
       where: { email },
     });
 
-    // Don't reveal if user exists
+    // Always respond immediately (don't reveal whether user exists)
     res.json({ message: "If the email exists, a reset link will be sent" });
 
-    // TODO: In production, send email with reset token
+    // Fire-and-forget after response to avoid timing leaks
+    if (user && user.status === "ACTIVE") {
+      try {
+        // Generate a short-lived signed JWT (1 hour) as the reset token
+        const resetToken = signToken(
+          { userId: user.id, email: user.email, role: user.role },
+          '1h'
+        );
+
+        await emailService.sendPasswordResetEmail(user.email, resetToken);
+        logger.info(`[AUTH] Password reset email sent to ${user.email}`);
+      } catch (emailError) {
+        logger.error("[AUTH] Failed to send password reset email:", emailError);
+      }
+    }
   } catch (error: any) {
-    res.status(500).json({ error: "Failed to process request" });
+    // Response already sent above; log internally
+    logger.error("[AUTH] reset-password-request error:", error);
   }
 });
 
@@ -315,8 +358,14 @@ router.post("/reset-password", async (req: Request, res: Response) => {
       return;
     }
 
-    // Verify reset token
+    // Verify reset token (throws if expired/invalid)
     const payload = verifyToken(token);
+
+    // Reject if token was already used
+    if (isBlacklisted(token)) {
+      res.status(400).json({ error: "Reset link has already been used" });
+      return;
+    }
 
     // Hash new password
     const hashedPassword = await hashPassword(newPassword);
@@ -328,6 +377,10 @@ router.post("/reset-password", async (req: Request, res: Response) => {
         password: hashedPassword,
       },
     });
+
+    // Immediately invalidate the reset token so it cannot be replayed
+    const expiry = (payload as any).exp ?? Math.floor(Date.now() / 1000) + 3600;
+    blacklistToken(token, expiry);
 
     res.json({ message: "Password reset successful" });
   } catch (error: any) {
@@ -378,7 +431,7 @@ router.get("/verify-email/:token", async (req: Request, res: Response) => {
       success: true 
     });
   } catch (error: any) {
-    console.error("Email verification error:", error);
+    logger.error("Email verification error:", error);
     res.status(500).json({ error: "Failed to verify email" });
   }
 });
@@ -419,14 +472,14 @@ router.post("/resend-verification", async (req: Request, res: Response) => {
     // Send verification email
     try {
       await emailService.sendWelcomeEmail(user.email, user.firstName, emailVerificationToken);
-      console.log(`[VERIFICATION] Resent verification email to ${user.email}`);
+      logger.info(`[VERIFICATION] Resent verification email to ${user.email}`);
     } catch (emailError) {
-      console.error("[VERIFICATION] Failed to send email:", emailError);
+      logger.error("[VERIFICATION] Failed to send email:", emailError);
     }
 
     res.json({ message: "Verification email sent successfully" });
   } catch (error: any) {
-    console.error("Resend verification error:", error);
+    logger.error("Resend verification error:", error);
     res.status(500).json({ error: "Failed to resend verification email" });
   }
 });

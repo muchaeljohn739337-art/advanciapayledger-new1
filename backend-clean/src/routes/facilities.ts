@@ -1,6 +1,7 @@
 import { Router, Response } from "express";
 import prisma from "../lib/prisma";
 import { authenticate, AuthRequest } from "../middleware/auth";
+import { logger } from "../lib/logger";
 
 const router = Router();
 
@@ -68,7 +69,7 @@ router.get("/", async (req: AuthRequest, res: Response) => {
       total: facilitiesWithRevenue.length,
     });
   } catch (error: any) {
-    console.error("Get facilities error:", error);
+    logger.error("Get facilities error:", error);
     res.status(500).json({ error: "Failed to fetch facilities" });
   }
 });
@@ -118,7 +119,7 @@ router.get("/:id", async (req: AuthRequest, res: Response) => {
       },
     });
   } catch (error: any) {
-    console.error("Get facility error:", error);
+    logger.error("Get facility error:", error);
     res.status(500).json({ error: "Failed to fetch facility" });
   }
 });
@@ -169,7 +170,7 @@ router.post("/", async (req: AuthRequest, res: Response) => {
       facility,
     });
   } catch (error: any) {
-    console.error("Create facility error:", error);
+    logger.error("Create facility error:", error);
     res.status(500).json({ error: "Failed to create facility" });
   }
 });
@@ -223,7 +224,7 @@ router.put("/:id", async (req: AuthRequest, res: Response) => {
       facility: updatedFacility,
     });
   } catch (error: any) {
-    console.error("Update facility error:", error);
+    logger.error("Update facility error:", error);
     res.status(500).json({ error: "Failed to update facility" });
   }
 });
@@ -257,7 +258,7 @@ router.delete("/:id", async (req: AuthRequest, res: Response) => {
       message: "Facility deleted successfully",
     });
   } catch (error: any) {
-    console.error("Delete facility error:", error);
+    logger.error("Delete facility error:", error);
     res.status(500).json({ error: "Failed to delete facility" });
   }
 });
@@ -308,7 +309,7 @@ router.get("/:id/stats", async (req: AuthRequest, res: Response) => {
       },
     });
   } catch (error: any) {
-    console.error("Get facility stats error:", error);
+    logger.error("Get facility stats error:", error);
     res.status(500).json({ error: "Failed to fetch facility statistics" });
   }
 });

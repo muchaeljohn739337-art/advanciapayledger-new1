@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { logger } from '../lib/logger';
 
 // User validation schemas
 export const registerSchema = z.object({
@@ -83,9 +84,9 @@ export function validateEnv() {
     return envSchema.parse(process.env);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      console.error('❌ Environment validation failed:');
+      logger.error('❌ Environment validation failed:');
       error.issues.forEach((err) => {
-        console.error(`  - ${err.path.join('.')}: ${err.message}`);
+        logger.error(`  - ${err.path.join('.')}: ${err.message}`);
       });
       process.exit(1);
     }

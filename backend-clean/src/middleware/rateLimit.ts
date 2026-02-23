@@ -1,10 +1,27 @@
-import rateLimit from 'express-rate-limit';
+import rateLimit, { Options } from 'express-rate-limit';
+import RedisStore from 'rate-limit-redis';
 import { Request, Response } from 'express';
+import getRedisClient from '../lib/redis';
+
+/**
+ * Build a RedisStore for express-rate-limit when Redis is available,
+ * otherwise return undefined so the default MemoryStore is used.
+ */
+function makeStore(): Options['store'] | undefined {
+  const client = getRedisClient();
+  if (!client) return undefined;
+  return new RedisStore({
+    // ioredis v5 exposes arbitrary commands via .call()
+    sendCommand: (...args: string[]) =>
+      (client as any).call(...args) as Promise<any>,
+  });
+}
 
 // General API rate limiter
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 requests per windowMs
+  store: makeStore(),
   message: {
     success: false,
     error: 'Too many requests, please try again later.',
@@ -15,7 +32,7 @@ export const apiLimiter = rateLimit({
     res.status(429).json({
       success: false,
       error: 'Too many requests, please try again later.',
-      retryAfter: req.rateLimit ? Math.ceil(req.rateLimit.resetTime.getTime() / 1000) : 60,
+      retryAfter: req.rateLimit ? Math.ceil((req.rateLimit.resetTime.getTime() - Date.now()) / 1000) : 60,
     });
   },
 });
@@ -24,6 +41,7 @@ export const apiLimiter = rateLimit({
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // Limit each IP to 5 login attempts per windowMs
+  store: makeStore(),
   skipSuccessfulRequests: true,
   message: {
     success: false,
@@ -33,7 +51,7 @@ export const authLimiter = rateLimit({
     res.status(429).json({
       success: false,
       error: 'Too many authentication attempts. Please try again in 15 minutes.',
-      retryAfter: req.rateLimit ? Math.ceil(req.rateLimit.resetTime.getTime() / 1000) : 900,
+      retryAfter: req.rateLimit ? Math.ceil((req.rateLimit.resetTime.getTime() - Date.now()) / 1000) : 900,
     });
   },
 });
@@ -42,6 +60,7 @@ export const authLimiter = rateLimit({
 export const cardCreationLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 3, // Limit each IP to 3 card creations per hour
+  store: makeStore(),
   message: {
     success: false,
     error: 'Card creation limit reached. Please try again later.',
@@ -50,7 +69,7 @@ export const cardCreationLimiter = rateLimit({
     res.status(429).json({
       success: false,
       error: 'Card creation limit reached. Maximum 3 cards per hour.',
-      retryAfter: req.rateLimit ? Math.ceil(req.rateLimit.resetTime.getTime() / 1000) : 3600,
+      retryAfter: req.rateLimit ? Math.ceil((req.rateLimit.resetTime.getTime() - Date.now()) / 1000) : 3600,
     });
   },
 });
@@ -59,6 +78,7 @@ export const cardCreationLimiter = rateLimit({
 export const conversionLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 10, // Limit each IP to 10 conversions per minute
+  store: makeStore(),
   message: {
     success: false,
     error: 'Too many conversion requests, please slow down.',
@@ -67,7 +87,7 @@ export const conversionLimiter = rateLimit({
     res.status(429).json({
       success: false,
       error: 'Too many conversion requests. Please wait a moment.',
-      retryAfter: req.rateLimit ? Math.ceil(req.rateLimit.resetTime.getTime() / 1000) : 60,
+      retryAfter: req.rateLimit ? Math.ceil((req.rateLimit.resetTime.getTime() - Date.now()) / 1000) : 60,
     });
   },
 });
@@ -76,6 +96,7 @@ export const conversionLimiter = rateLimit({
 export const transactionLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 20, // Limit each IP to 20 transactions per minute
+  store: makeStore(),
   message: {
     success: false,
     error: 'Too many transaction requests, please slow down.',
@@ -84,7 +105,7 @@ export const transactionLimiter = rateLimit({
     res.status(429).json({
       success: false,
       error: 'Too many transaction requests. Please wait a moment.',
-      retryAfter: req.rateLimit ? Math.ceil(req.rateLimit.resetTime.getTime() / 1000) : 60,
+      retryAfter: req.rateLimit ? Math.ceil((req.rateLimit.resetTime.getTime() - Date.now()) / 1000) : 60,
     });
   },
 });

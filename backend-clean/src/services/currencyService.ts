@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma";
+import { logger } from "../lib/logger";
 
 export interface Currency {
   code: string;
@@ -74,7 +75,7 @@ export class CurrencyService {
     try {
       // Check if prisma is available
       if (!prisma || !prisma.currency) {
-        console.log("Prisma not ready, using default currencies");
+        logger.info("Prisma not ready, using default currencies");
         this.initializeInMemoryDefaults();
         this.initialized = true;
         return;
@@ -98,9 +99,9 @@ export class CurrencyService {
         await this.initializeDefaultCurrencies();
       }
 
-      console.log(`Initialized ${this.supportedCurrencies.size} currencies`);
+      logger.info(`Initialized ${this.supportedCurrencies.size} currencies`);
     } catch (error) {
-      console.error("Error initializing currencies:", error);
+      logger.error("Error initializing currencies:", error);
       this.initializeInMemoryDefaults();
     }
     this.initialized = true;
@@ -161,7 +162,7 @@ export class CurrencyService {
       });
       this.exchangeRates.set(`USD-${c.code}`, c.exchangeRate);
     });
-    console.log(`Initialized ${defaults.length} in-memory currencies`);
+    logger.info(`Initialized ${defaults.length} in-memory currencies`);
   }
 
   private async initializeDefaultCurrencies() {
@@ -286,7 +287,7 @@ export class CurrencyService {
       this.exchangeRates.set(`USD-${currency.code}`, currency.exchangeRate);
     }
 
-    console.log("Initialized default currencies");
+    logger.info("Initialized default currencies");
   }
 
   private startRateUpdates() {
@@ -331,11 +332,11 @@ export class CurrencyService {
       }
 
       this.lastRateUpdate = new Date();
-      console.log(
+      logger.info(
         `Updated exchange rates for ${Object.keys(rates).length} pairs`
       );
     } catch (error) {
-      console.error("Error updating exchange rates:", error);
+      logger.error("Error updating exchange rates:", error);
     }
   }
 
@@ -368,7 +369,7 @@ export class CurrencyService {
       }
     } catch (error) {
       if (!this.rateFetchFailed) {
-        console.log("Primary exchange API unavailable, trying backup...");
+        logger.info("Primary exchange API unavailable, trying backup...");
       }
     }
 
@@ -399,7 +400,7 @@ export class CurrencyService {
       }
     } catch (error) {
       if (!this.rateFetchFailed) {
-        console.error("Backup API also failed, using static fallback rates:", (error as Error).message);
+        logger.error("Backup API also failed, using static fallback rates:", (error as Error).message);
         this.rateFetchFailed = true;
       }
     }
@@ -479,7 +480,7 @@ export class CurrencyService {
 
       return result;
     } catch (error) {
-      console.error("Currency conversion error:", error);
+      logger.error("Currency conversion error:", error);
       throw error;
     }
   }
@@ -509,7 +510,7 @@ export class CurrencyService {
   private async logConversion(conversion: ConversionResult) {
     try {
       // Log conversion for audit trail
-      console.log(
+      logger.info(
         `Currency Conversion: ${conversion.fromAmount} ${conversion.fromCurrency} → ${conversion.toAmount} ${conversion.toCurrency} (Rate: ${conversion.exchangeRate})`
       );
 
@@ -524,7 +525,7 @@ export class CurrencyService {
       //   timestamp: conversion.timestamp
       // });
     } catch (error) {
-      console.error("Error logging conversion:", error);
+      logger.error("Error logging conversion:", error);
     }
   }
 
@@ -580,7 +581,7 @@ export class CurrencyService {
 
       return currency;
     } catch (error) {
-      console.error("Error updating currency:", error);
+      logger.error("Error updating currency:", error);
       throw error;
     }
   }
@@ -605,7 +606,7 @@ export class CurrencyService {
 
       return newCurrency;
     } catch (error) {
-      console.error("Error adding currency:", error);
+      logger.error("Error adding currency:", error);
       throw error;
     }
   }
@@ -687,7 +688,7 @@ export class CurrencyService {
 
       return balances.sort((a, b) => b.usdEquivalent - a.usdEquivalent);
     } catch (error) {
-      console.error("Error getting user wallet balances:", error);
+      logger.error("Error getting user wallet balances:", error);
       return [];
     }
   }
@@ -715,7 +716,7 @@ export class CurrencyService {
 
       return rates;
     } catch (error) {
-      console.error("Error getting exchange rate history:", error);
+      logger.error("Error getting exchange rate history:", error);
       return [];
     }
   }
@@ -732,7 +733,7 @@ export class CurrencyService {
       // For now, return empty array
       return [];
     } catch (error) {
-      console.error("Error getting conversion history:", error);
+      logger.error("Error getting conversion history:", error);
       return [];
     }
   }

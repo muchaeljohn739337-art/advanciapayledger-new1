@@ -1,10 +1,10 @@
-import { PrismaClient } from '@prisma/client';
 import { Router } from 'express';
 import { authenticate, AuthRequest } from '../../middleware/auth';
 import { stripeService } from '../../services/stripe.service';
+import { logger } from "../../lib/logger";
+import prisma from '../../lib/prisma';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 /**
  * Create virtual card
@@ -38,8 +38,18 @@ router.post('/create', authenticate, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: 'Insufficient wallet balance' });
     }
 
+    // Fetch user to get real name/email/phone for Stripe cardholder
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
     // Create card with Stripe
-    const stripeCard = await stripeService.createVirtualCard(userId, amount);
+    const stripeCard = await stripeService.createVirtualCard(userId, amount, {
+      name: `${user.firstName} ${user.lastName}`,
+      email: user.email,
+      phoneNumber: user.phone ?? '+10000000000',
+    });
 
     // Save to database and deduct from wallet (atomic transaction)
     const result = await prisma.$transaction(async (tx: any) => {
@@ -54,7 +64,7 @@ router.post('/create', authenticate, async (req: AuthRequest, res) => {
         data: {
           userId,
           cardNumber: `****${stripeCard.last4}`,
-          cardholderName: `User ${userId}`,
+          cardholderName: `${user.firstName} ${user.lastName}`,
           expiryDate: `${String(stripeCard.expMonth).padStart(2, '0')}/${stripeCard.expYear}`,
           cvv: '***',
           bin: '****',
@@ -83,7 +93,7 @@ router.post('/create', authenticate, async (req: AuthRequest, res) => {
       },
     });
   } catch (error: any) {
-    console.error('Card creation error:', error);
+    logger.error('Card creation error:', error);
     res.status(500).json({ error: error.message || 'Failed to create card' });
   }
 });
@@ -154,7 +164,7 @@ router.post('/fund', authenticate, async (req: AuthRequest, res) => {
       newBalance,
     });
   } catch (error: any) {
-    console.error('Card funding error:', error);
+    logger.error('Card funding error:', error);
     res.status(500).json({ error: error.message || 'Failed to fund card' });
   }
 });
@@ -195,7 +205,7 @@ router.get('/:cardId', authenticate, async (req: AuthRequest, res) => {
       },
     });
   } catch (error: any) {
-    console.error('Get card error:', error);
+    logger.error('Get card error:', error);
     res.status(500).json({ error: 'Failed to get card details' });
   }
 });
@@ -234,7 +244,7 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
       }),
     });
   } catch (error: any) {
-    console.error('Get cards error:', error);
+    logger.error('Get cards error:', error);
     res.status(500).json({ error: 'Failed to get cards' });
   }
 });
@@ -281,7 +291,7 @@ router.post('/:cardId/status', authenticate, async (req: AuthRequest, res) => {
       status: active ? 'active' : 'frozen',
     });
   } catch (error: any) {
-    console.error('Card status update error:', error);
+    logger.error('Card status update error:', error);
     res.status(500).json({ error: error.message || 'Failed to update card status' });
   }
 });
@@ -324,7 +334,7 @@ router.get('/:cardId/transactions', authenticate, async (req: AuthRequest, res) 
       try {
         stripeTransactions = await stripeService.getCardTransactions(card.stripeCardId, 20);
       } catch (err) {
-        console.log('Could not fetch Stripe transactions:', err);
+        logger.info('Could not fetch Stripe transactions:', err);
       }
     }
 
@@ -345,7 +355,7 @@ router.get('/:cardId/transactions', authenticate, async (req: AuthRequest, res) 
       ],
     });
   } catch (error: any) {
-    console.error('Get transactions error:', error);
+    logger.error('Get transactions error:', error);
     res.status(500).json({ error: 'Failed to get transactions' });
   }
 });
@@ -365,7 +375,7 @@ router.post('/webhook', async (req, res) => {
     const result = await stripeService.handleWebhook(req.body, signature);
     res.json(result);
   } catch (error: any) {
-    console.error('Stripe webhook error:', error);
+    logger.error('Stripe webhook error:', error);
     res.status(400).json({ error: 'Webhook error' });
   }
 });

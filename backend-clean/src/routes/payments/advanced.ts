@@ -3,6 +3,7 @@ import { authenticate, AuthRequest, requireRole } from "../../middleware/auth";
 import { advancedPaymentProcessing } from "../../services/advancedPaymentProcessing";
 import { fraudDetection } from "../../services/fraudDetection";
 import { prisma } from "../../lib/prisma";
+import { logger } from "../../lib/logger";
 
 const router = Router();
 
@@ -95,7 +96,7 @@ router.post("/process", authenticate, async (req: AuthRequest, res) => {
       }
     }
   } catch (error) {
-    console.error("Payment processing error:", error);
+    logger.error("Payment processing error:", error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -127,7 +128,7 @@ router.get(
         transaction: status,
       });
     } catch (error) {
-      console.error("Get transaction status error:", error);
+      logger.error("Get transaction status error:", error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -158,7 +159,7 @@ router.get("/history", authenticate, async (req: AuthRequest, res) => {
       ...history,
     });
   } catch (error) {
-    console.error("Get transaction history error:", error);
+    logger.error("Get transaction history error:", error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -211,7 +212,7 @@ router.post("/risk-assessment", authenticate, async (req: AuthRequest, res) => {
       },
     });
   } catch (error) {
-    console.error("Risk assessment error:", error);
+    logger.error("Risk assessment error:", error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -243,7 +244,7 @@ router.get(
         ...logs,
       });
     } catch (error) {
-      console.error("Get fraud logs error:", error);
+      logger.error("Get fraud logs error:", error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -266,7 +267,7 @@ router.get(
         stats,
       });
     } catch (error) {
-      console.error("Get payment stats error:", error);
+      logger.error("Get payment stats error:", error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -357,7 +358,7 @@ async function getPaymentProcessingStats() {
       riskDistribution: await getRiskDistribution(),
     };
   } catch (error) {
-    console.error("Error getting payment stats:", error);
+    logger.error("Error getting payment stats:", error);
     throw error;
   }
 }
@@ -397,7 +398,7 @@ async function getRiskDistribution() {
       },
     };
   } catch (error) {
-    console.error("Error getting risk distribution:", error);
+    logger.error("Error getting risk distribution:", error);
     return {
       LOW: { count: 0, percentage: "0" },
       MEDIUM: { count: 0, percentage: "0" },

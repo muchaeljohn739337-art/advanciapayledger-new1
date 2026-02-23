@@ -35,6 +35,7 @@ import { initializeSocketService } from "./services/socketService";
 import { RealTimeMonitoringService } from "./services/realTimeMonitoring";
 import { activityLogger } from "./middleware/activityLogger";
 import { completeEmptyResponse } from "./middleware/emptyResponse";
+import { logger } from "./lib/logger";
 import { cronService } from "./services/cron.service";
 import adminActivityRoutes from "./routes/admin/activity";
 import adminAnalyticsRoutes from "./routes/admin/analytics";
@@ -205,7 +206,7 @@ app.use(errorHandler);
 // SERVER STARTUP
 // ============================================================================
 
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 4000;
 
 // Initialize Socket.IO with authentication
 const socketService = initializeSocketService(httpServer);
@@ -219,19 +220,19 @@ const monitoringService = initializeRealTimeMonitoring(httpServer);
 
 if (process.env.NODE_ENV !== "test") {
   httpServer.listen(PORT, () => {
-    console.log(`🚀 Backend API listening on port ${PORT}`);
-    console.log(`📊 Health check: http://localhost:${PORT}/health`);
-    console.log(`🔐 Auth routes: http://localhost:${PORT}/api/auth/*`);
-    console.log(`📈 KPI routes: http://localhost:${PORT}/api/kpi/*`);
-    console.log(`💳 Payment routes: http://localhost:${PORT}/api/payments/*`);
-    console.log(`🪙 Crypto routes: http://localhost:${PORT}/api/crypto/*`);
-    console.log(`📊 Dashboard routes: http://localhost:${PORT}/api/dashboard/*`);
-    console.log(`🔌 Socket.IO enabled with JWT authentication`);
-    console.log(`🛡️  Security headers enabled (CORS, AI Protection)`);
-    
+    logger.info(`🚀 Backend API listening on port ${PORT}`);
+    logger.info(`📊 Health check: http://localhost:${PORT}/health`);
+    logger.info(`🔐 Auth routes: http://localhost:${PORT}/api/auth/*`);
+    logger.info(`📈 KPI routes: http://localhost:${PORT}/api/kpi/*`);
+    logger.info(`💳 Payment routes: http://localhost:${PORT}/api/payments/*`);
+    logger.info(`🪙 Crypto routes: http://localhost:${PORT}/api/crypto/*`);
+    logger.info(`📊 Dashboard routes: http://localhost:${PORT}/api/dashboard/*`);
+    logger.info(`🔌 Socket.IO enabled with JWT authentication`);
+    logger.info(`🛡️  Security headers enabled (CORS, AI Protection)`);
+
     // Start cron services
     cronService.startAll();
-    console.log(`⏰ Cron services initialized`);
+    logger.info(`⏰ Cron services initialized`);
   });
 }
 

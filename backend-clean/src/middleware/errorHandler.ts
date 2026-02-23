@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 import { captureException, captureMessage } from '../config/sentry';
+import { logger } from "../lib/logger";
 
 // Custom error classes
 export class AppError extends Error {
@@ -44,22 +45,6 @@ export class ConflictError extends AppError {
   }
 }
 
-// Logger utility
-const logger = {
-  error: (error: Error, meta?: any) => {
-    console.error('❌ Error:', {
-      message: error.message,
-      stack: error.stack,
-      ...meta,
-    });
-  },
-  warn: (message: string, meta?: any) => {
-    console.warn('⚠️  Warning:', message, meta);
-  },
-  info: (message: string, meta?: any) => {
-    console.info('ℹ️  Info:', message, meta);
-  },
-};
 
 // Centralized error handler middleware
 export function errorHandler(
@@ -69,7 +54,8 @@ export function errorHandler(
   next: NextFunction
 ): void {
   // Log error
-  logger.error(err, {
+  logger.error(err instanceof Error ? err.message : String(err), {
+    stack: err instanceof Error ? err.stack : undefined,
     path: req.path,
     method: req.method,
     ip: req.ip,

@@ -1,18 +1,34 @@
 import { Request } from "express";
-import { prisma } from "../lib/prisma";
+import prisma from "../lib/prisma";
+import { logger } from "../lib/logger";
 
 // Fraud detection service
 export class FraudDetectionService {
   private suspiciousIPs: Set<string> = new Set();
   private requestCounts: Map<string, { count: number; timestamp: number }> =
     new Map();
-  private blacklistedCountries: Set<string> = new Set(["XX", "YY"]); // Add actual country codes
+  // Empty by default — populate via admin API or env config in production
+  private blacklistedCountries: Set<string> = new Set();
   private riskThresholds = {
     low: 30,
     medium: 50,
     high: 70,
     critical: 90,
   };
+
+  constructor() {
+    // Purge stale in-memory records every 10 minutes to prevent unbounded growth
+    setInterval(() => this.purgeStaleRecords(), 10 * 60 * 1000).unref();
+  }
+
+  private purgeStaleRecords(): void {
+    const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
+    for (const [ip, record] of this.requestCounts.entries()) {
+      if (record.timestamp < tenMinutesAgo) {
+        this.requestCounts.delete(ip);
+      }
+    }
+  }
 
   // Check if request is from a bot
   async detectBot(req: Request): Promise<{ isBot: boolean; reason?: string }> {
@@ -76,44 +92,51 @@ export class FraudDetectionService {
     const reasons: string[] = [];
     let riskScore = 0;
 
-    // Check amount
-    if (data.amount > 10000) {
-      riskScore += 30;
-      reasons.push("Large transaction amount");
-    }
-
-    if (data.amount > 50000) {
-      riskScore += 50;
-      reasons.push("Very large transaction amount - requires manual review");
-    }
-
-    // Check if IP is suspicious
-    if (this.suspiciousIPs.has(data.ip)) {
-      riskScore += 40;
-      reasons.push("Transaction from suspicious IP address");
-    }
-
-    // Check for rapid transactions
-    const recentTxCount = await this.getRecentTransactionCount(data.userId);
-    if (recentTxCount > 5) {
-      riskScore += 25;
-      reasons.push("Multiple transactions in short time");
-    }
-
-    // Check destination address (for crypto)
-    if (data.destinationAddress) {
-      const isKnownScam = await this.checkScamAddress(data.destinationAddress);
-      if (isKnownScam) {
-        riskScore += 100;
-        reasons.push("CRITICAL: Known scam address detected");
+    try {
+      // Check amount
+      if (data.amount > 10000) {
+        riskScore += 30;
+        reasons.push("Large transaction amount");
       }
-    }
 
-    // Velocity check - unusual spending pattern
-    const avgTransaction = await this.getUserAverageTransaction(data.userId);
-    if (avgTransaction > 0 && data.amount > avgTransaction * 5) {
-      riskScore += 35;
-      reasons.push("Transaction amount significantly higher than user average");
+      if (data.amount > 50000) {
+        riskScore += 50;
+        reasons.push("Very large transaction amount - requires manual review");
+      }
+
+      // Check if IP is suspicious
+      if (this.suspiciousIPs.has(data.ip)) {
+        riskScore += 40;
+        reasons.push("Transaction from suspicious IP address");
+      }
+
+      // Check for rapid transactions
+      const recentTxCount = await this.getRecentTransactionCount(data.userId);
+      if (recentTxCount > 5) {
+        riskScore += 25;
+        reasons.push("Multiple transactions in short time");
+      }
+
+      // Check destination address (for crypto)
+      if (data.destinationAddress) {
+        const isKnownScam = await this.checkScamAddress(data.destinationAddress);
+        if (isKnownScam) {
+          riskScore += 100;
+          reasons.push("CRITICAL: Known scam address detected");
+        }
+      }
+
+      // Velocity check - unusual spending pattern
+      const avgTransaction = await this.getUserAverageTransaction(data.userId);
+      if (avgTransaction > 0 && data.amount > avgTransaction * 5) {
+        riskScore += 35;
+        reasons.push("Transaction amount significantly higher than user average");
+      }
+    } catch (error) {
+      logger.error("[FraudDetection] detectFraudulentTransaction error:", error);
+      // Fail safe: treat errored checks as high-risk
+      riskScore = Math.max(riskScore, this.riskThresholds.high);
+      reasons.push("Risk evaluation incomplete due to internal error");
     }
 
     return {
@@ -193,7 +216,7 @@ export class FraudDetectionService {
       });
       return count;
     } catch (error) {
-      console.error("Error getting recent transaction count:", error);
+      logger.error("Error getting recent transaction count:", error);
       return 0;
     }
   }
@@ -212,7 +235,7 @@ export class FraudDetectionService {
       });
       return Number(result._avg.amount) || 0;
     } catch (error) {
-      console.error("Error getting user average transaction:", error);
+      logger.error("Error getting user average transaction:", error);
       return 0;
     }
   }
@@ -495,7 +518,7 @@ export class FraudDetectionService {
         },
       });
     } catch (error) {
-      console.error("Error logging fraud detection:", error);
+      logger.error("Error logging fraud detection:", error);
     }
   }
 }

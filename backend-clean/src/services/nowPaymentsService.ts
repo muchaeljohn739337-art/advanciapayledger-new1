@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import axios from "axios";
+import { logger } from "../lib/logger";
 
 export interface CreateOrderParams {
   price_amount: number;
@@ -44,7 +45,7 @@ export class NowPaymentsService {
 
   async createPayment(params: CreateOrderParams) {
     try {
-      console.log("Creating NOWPayments order:", params.order_id);
+      logger.info("Creating NOWPayments order:", params.order_id);
 
       const response = await axios.post(`${this.baseUrl}/payment`, params, {
         headers: {
@@ -54,13 +55,13 @@ export class NowPaymentsService {
         timeout: 30000,
       });
 
-      console.log(
+      logger.info(
         "NOWPayments order created successfully:",
         response.data.payment_id
       );
       return response.data;
     } catch (error: any) {
-      console.error(
+      logger.error(
         "NOWPayments API error:",
         error.response?.data || error.message
       );
@@ -84,7 +85,7 @@ export class NowPaymentsService {
   verifyWebhookSignature(payload: string, signature: string): boolean {
     try {
       if (!signature || !payload) {
-        console.error("Missing signature or payload");
+        logger.error("Missing signature or payload");
         return false;
       }
 
@@ -97,13 +98,13 @@ export class NowPaymentsService {
       const expectedBuffer = Buffer.from(expectedSignature, "hex");
 
       if (signatureBuffer.length !== expectedBuffer.length) {
-        console.error("Signature length mismatch");
+        logger.error("Signature length mismatch");
         return false;
       }
 
       return crypto.timingSafeEqual(signatureBuffer, expectedBuffer);
     } catch (error) {
-      console.error("Signature verification error:", error);
+      logger.error("Signature verification error:", error);
       return false;
     }
   }
@@ -116,7 +117,7 @@ export class NowPaymentsService {
       });
       return response.data;
     } catch (error: any) {
-      console.error(
+      logger.error(
         "Payment status check error:",
         error.response?.data || error.message
       );
@@ -136,7 +137,7 @@ export class NowPaymentsService {
       });
       return response.data.currencies;
     } catch (error: any) {
-      console.error(
+      logger.error(
         "Currency list error:",
         error.response?.data || error.message
       );
@@ -159,7 +160,7 @@ export class NowPaymentsService {
       });
       return response.data;
     } catch (error: any) {
-      console.error(
+      logger.error(
         "Exchange rate estimate error:",
         error.response?.data || error.message
       );
@@ -196,15 +197,18 @@ export class NowPaymentsService {
 }
 
 let nowPaymentsServiceInstance: NowPaymentsService | null = null;
+let nowPaymentsInitFailed = false;
 
 export function getNowPaymentsService(): NowPaymentsService | null {
+  if (nowPaymentsInitFailed) return null;
   if (!nowPaymentsServiceInstance) {
     try {
       nowPaymentsServiceInstance = new NowPaymentsService();
     } catch (error) {
-      console.warn(
-        "NOWPayments service not available:",
-        error instanceof Error ? error.message : "Unknown error"
+      nowPaymentsInitFailed = true;
+      logger.warn(
+        'NOWPayments service not available:',
+        error instanceof Error ? error.message : 'Unknown error'
       );
       return null;
     }

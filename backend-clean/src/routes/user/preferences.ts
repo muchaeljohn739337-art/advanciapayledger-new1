@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authenticate, AuthRequest } from "../../middleware/auth";
 import { prisma } from "../../lib/prisma";
+import { logger } from "../../lib/logger";
 
 const router = Router();
 
@@ -35,7 +36,7 @@ router.get("/", authenticate, async (req: AuthRequest, res) => {
       preferences,
     });
   } catch (error) {
-    console.error("Error fetching user preferences:", error);
+    logger.error("Error fetching user preferences:", error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -102,7 +103,7 @@ router.put("/", authenticate, async (req: AuthRequest, res) => {
       preferences,
     });
   } catch (error) {
-    console.error("Error updating user preferences:", error);
+    logger.error("Error updating user preferences:", error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -160,7 +161,7 @@ router.patch("/:field", authenticate, async (req: AuthRequest, res) => {
       preferences,
     });
   } catch (error) {
-    console.error(`Error updating ${paramToString((req.params as any).field)}:`, error);
+    logger.error(`Error updating ${paramToString((req.params as any).field)}:`, error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -187,7 +188,7 @@ router.get("/payment-methods", authenticate, async (req: AuthRequest, res) => {
       paymentMethods,
     });
   } catch (error) {
-    console.error("Error fetching payment methods:", error);
+    logger.error("Error fetching payment methods:", error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",

@@ -1,3 +1,4 @@
+import { logger } from "../lib/logger";
 /**
  * Gradient AI Service - Advancia Pay Ledger
  * 
@@ -35,7 +36,7 @@ export class GradientAIService {
   constructor() {
     this.apiKey = process.env.GRADIENT_API_KEY || '';
     if (!this.apiKey) {
-      console.log('⚠️ Gradient AI service not configured - missing GRADIENT_API_KEY');
+      logger.info('⚠️ Gradient AI service not configured - missing GRADIENT_API_KEY');
     }
   }
 
@@ -80,7 +81,7 @@ export class GradientAIService {
       const data: GradientResponse = await response.json();
       return data.choices[0]?.message?.content || '';
     } catch (error: any) {
-      console.error('Gradient AI chat completion error:', error);
+      logger.error('Gradient AI chat completion error:', error);
       throw new Error(`Failed to get AI response: ${error.message}`);
     }
   }
@@ -137,7 +138,7 @@ Consider factors like:
       const analysis = JSON.parse(response);
       return analysis;
     } catch (error) {
-      console.error('Transaction analysis error:', error);
+      logger.error('Transaction analysis error:', error);
       // Return safe default
       return {
         riskScore: 50,
@@ -193,7 +194,7 @@ Respond in JSON format:
 
       return JSON.parse(response);
     } catch (error) {
-      console.error('Support response generation error:', error);
+      logger.error('Support response generation error:', error);
       return {
         response: 'Thank you for contacting Advancia Pay Ledger support. We\'ve received your message and will respond shortly.',
         category: 'general',
@@ -249,7 +250,7 @@ Look for:
 
       return JSON.parse(response);
     } catch (error) {
-      console.error('User behavior analysis error:', error);
+      logger.error('User behavior analysis error:', error);
       return {
         behaviorScore: 50,
         patterns: [],
@@ -282,7 +283,7 @@ Look for:
 
       return await response.json();
     } catch (error: any) {
-      console.error('Get models error:', error);
+      logger.error('Get models error:', error);
       throw new Error(`Failed to get available models: ${error.message}`);
     }
   }

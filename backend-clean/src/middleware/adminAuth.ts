@@ -31,16 +31,9 @@ export const authenticateAdminKey = (req: AdminRequest, res: Response, next: Nex
     });
   }
 
-  if (!adminKeyService.hasAdminPrivileges(adminKey)) {
-    return res.status(401).json({ 
-      error: 'Invalid admin key',
-      message: 'The provided admin key is invalid or lacks privileges'
-    });
-  }
-
   const level = adminKeyService.getAdminLevel(adminKey);
   if (level === 'INVALID') {
-    return res.status(401).json({
+    return res.status(401).json({ 
       error: 'Invalid admin key',
       message: 'The provided admin key is invalid or lacks privileges'
     });
@@ -68,7 +61,7 @@ export const authenticateAdminKey = (req: AdminRequest, res: Response, next: Nex
  * Super Admin Required Middleware
  */
 export const requireSuperAdmin = (req: AdminRequest, res: Response, next: NextFunction) => {
-  if (!req.admin || !adminKeyService.hasSuperAdminPrivileges(req.admin.key)) {
+  if (!req.admin || (req.admin.level !== 'SUPER_ADMIN' && req.admin.level !== 'SYSTEM_ADMIN')) {
     return res.status(403).json({ 
       error: 'Super admin access required',
       message: 'This endpoint requires super admin privileges'
@@ -82,7 +75,7 @@ export const requireSuperAdmin = (req: AdminRequest, res: Response, next: NextFu
  * System Admin Required Middleware
  */
 export const requireSystemAdmin = (req: AdminRequest, res: Response, next: NextFunction) => {
-  if (!req.admin || !adminKeyService.hasSystemAdminPrivileges(req.admin.key)) {
+  if (!req.admin || req.admin.level !== 'SYSTEM_ADMIN') {
     return res.status(403).json({ 
       error: 'System admin access required',
       message: 'This endpoint requires system admin privileges'
@@ -97,12 +90,10 @@ export const requireSystemAdmin = (req: AdminRequest, res: Response, next: NextF
  */
 export const requirePermission = (permission: string) => {
   return (req: AdminRequest, res: Response, next: NextFunction) => {
-    if (!req.admin || !adminKeyService.hasPermission(req.admin.key, permission)) {
+    if (!req.admin || !req.admin.permissions.includes(permission)) {
       return res.status(403).json({ 
         error: 'Insufficient permissions',
-        message: `Requires permission: ${permission}`,
-        currentLevel: req.admin?.level,
-        currentPermissions: req.admin?.permissions
+        message: `Requires permission: ${permission}`
       });
     }
 
@@ -168,7 +159,7 @@ export const verifyAdminToken = (req: AdminRequest, res: Response, next: NextFun
     req.admin = {
       level: payload.adminLevel,
       permissions: payload.permissions,
-      key: 'token_verified',
+      key: '', // raw key unavailable after JWT token auth — use level/permissions for all authz
       authenticated: true
     };
 
@@ -187,7 +178,6 @@ export const logAdminAction = (action: string, resource: string) => {
       adminKeyService.logAdminAction(req.admin.key, action, resource, {
         method: req.method,
         path: req.path,
-        body: req.body,
         ip: req.ip,
         userAgent: req.headers['user-agent']
       });

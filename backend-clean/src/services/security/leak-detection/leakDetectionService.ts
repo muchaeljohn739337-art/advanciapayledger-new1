@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import { logger } from "../../../lib/logger";
 
 interface LeakDetectionRule {
   id: string;
@@ -112,16 +113,16 @@ class LeakDetectionService {
     if (this.isScanning) return;
     
     this.isScanning = true;
-    console.log('🔍 Starting leak detection scan...');
+    logger.info('🔍 Starting leak detection scan...');
     
     try {
       await this.scanDirectory('./src', ['.ts', '.js', '.tsx', '.jsx']);
       await this.scanDirectory('./', ['.env*', '.json', '.yml', '.yaml']);
       await this.scanGitHistory();
       
-      console.log(`✅ Scan completed. Found ${this.reports.length} potential leaks`);
+      logger.info(`✅ Scan completed. Found ${this.reports.length} potential leaks`);
     } catch (error) {
-      console.error('❌ Scan failed:', error);
+      logger.error('❌ Scan failed:', error);
     } finally {
       this.isScanning = false;
     }
@@ -167,14 +168,14 @@ class LeakDetectionService {
             this.reports.push(report);
             
             if (rule.action === 'alert') {
-              console.error(`🚨 SECRET LEAK DETECTED: ${rule.name} in ${filePath}`);
-              console.error(`   Content: ${match.substring(0, 50)}...`);
+              logger.error(`🚨 SECRET LEAK DETECTED: ${rule.name} in ${filePath}`);
+              logger.error(`   Content: ${match.substring(0, 50)}...`);
             }
           }
         }
       }
     } catch (error) {
-      console.error(`Failed to scan file ${filePath}:`, error);
+      logger.error(`Failed to scan file ${filePath}:`, error);
     }
   }
 
@@ -215,7 +216,7 @@ class LeakDetectionService {
         }
       }
     } catch (error) {
-      console.warn('Git history scan failed:', error);
+      logger.warn('Git history scan failed:', error);
     }
   }
 
@@ -245,7 +246,7 @@ class LeakDetectionService {
           this.reports.push(report);
           
           if (rule.action === 'alert') {
-            console.error(`🚨 SECRET LEAK DETECTED: ${rule.name} in ${location}`);
+            logger.error(`🚨 SECRET LEAK DETECTED: ${rule.name} in ${location}`);
           }
         }
       }

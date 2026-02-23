@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { logger } from "../lib/logger";
 
 interface EmailOptions {
   to: string;
@@ -62,8 +63,15 @@ class EmailService {
   }
 
   async sendEmail(options: EmailOptions): Promise<boolean> {
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(options.to)) {
+      logger.error(`[EmailService] Invalid recipient address: address rejected`);
+      return false;
+    }
+
     try {
-      const from = process.env.EMAIL_FROM || "noreply@advanciapayledger.com";
+      const from = process.env.EMAIL_FROM || 'noreply@advanciapayledger.com';
 
       await this.transporter.sendMail({
         from,
@@ -73,10 +81,11 @@ class EmailService {
         text: options.text || this.stripHtml(options.html),
       });
 
-      console.log(`Email sent successfully to ${options.to}`);
+      // Avoid logging PII — log subject only
+      logger.info(`[EmailService] Email sent successfully — subject: "${options.subject}"`);
       return true;
     } catch (error) {
-      console.error("Email sending failed:", error);
+      logger.error('[EmailService] Email sending failed:', error);
       return false;
     }
   }

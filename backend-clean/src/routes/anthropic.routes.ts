@@ -7,6 +7,8 @@
 import { Router, Response } from 'express';
 import { anthropicService } from '../services/anthropic.service';
 import { authenticateAdminKey, requirePermission } from '../middleware/adminAuth';
+import { authenticate } from '../middleware/auth';
+import { logger } from "../lib/logger";
 
 const router = Router();
 
@@ -40,7 +42,7 @@ router.get('/status', (req, res) => {
  * Chat Completion
  * POST /api/anthropic/chat
  */
-router.post('/chat', async (req, res) => {
+router.post('/chat', authenticate, async (req, res) => {
   try {
     const { messages } = req.body;
 
@@ -64,7 +66,7 @@ router.post('/chat', async (req, res) => {
       timestamp: new Date().toISOString()
     });
   } catch (error: any) {
-    console.error('Anthropic chat completion error:', error);
+    logger.error('Anthropic chat completion error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -73,7 +75,7 @@ router.post('/chat', async (req, res) => {
  * Text Completion
  * POST /api/anthropic/complete
  */
-router.post('/complete', async (req, res) => {
+router.post('/complete', authenticate, async (req, res) => {
   try {
     const { prompt } = req.body;
 
@@ -93,7 +95,7 @@ router.post('/complete', async (req, res) => {
       timestamp: new Date().toISOString()
     });
   } catch (error: any) {
-    console.error('Anthropic text completion error:', error);
+    logger.error('Anthropic text completion error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -102,7 +104,7 @@ router.post('/complete', async (req, res) => {
  * Transaction Fraud Analysis
  * POST /api/anthropic/analyze-transaction
  */
-router.post('/analyze-transaction', async (req, res) => {
+router.post('/analyze-transaction', authenticate, async (req, res) => {
   try {
     const { transactionData } = req.body;
 
@@ -129,7 +131,7 @@ router.post('/analyze-transaction', async (req, res) => {
       timestamp: new Date().toISOString()
     });
   } catch (error: any) {
-    console.error('Anthropic transaction analysis error:', error);
+    logger.error('Anthropic transaction analysis error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -138,7 +140,7 @@ router.post('/analyze-transaction', async (req, res) => {
  * Customer Support Response
  * POST /api/anthropic/support-response
  */
-router.post('/support-response', async (req, res) => {
+router.post('/support-response', authenticate, async (req, res) => {
   try {
     const { customerMessage, category = 'general' } = req.body;
 
@@ -160,7 +162,7 @@ router.post('/support-response', async (req, res) => {
       timestamp: new Date().toISOString()
     });
   } catch (error: any) {
-    console.error('Anthropic support response error:', error);
+    logger.error('Anthropic support response error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -169,7 +171,7 @@ router.post('/support-response', async (req, res) => {
  * User Behavior Analysis
  * POST /api/anthropic/analyze-behavior
  */
-router.post('/analyze-behavior', async (req, res) => {
+router.post('/analyze-behavior', authenticateAdminKey, async (req, res) => {
   try {
     const { userActivity } = req.body;
 
@@ -196,7 +198,7 @@ router.post('/analyze-behavior', async (req, res) => {
       timestamp: new Date().toISOString()
     });
   } catch (error: any) {
-    console.error('Anthropic behavior analysis error:', error);
+    logger.error('Anthropic behavior analysis error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -205,7 +207,7 @@ router.post('/analyze-behavior', async (req, res) => {
  * Financial Insights
  * POST /api/anthropic/financial-insights
  */
-router.post('/financial-insights', async (req, res) => {
+router.post('/financial-insights', authenticateAdminKey, async (req, res) => {
   try {
     const { financialData } = req.body;
 
@@ -232,7 +234,7 @@ router.post('/financial-insights', async (req, res) => {
       timestamp: new Date().toISOString()
     });
   } catch (error: any) {
-    console.error('Anthropic financial insights error:', error);
+    logger.error('Anthropic financial insights error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -268,7 +270,7 @@ router.post('/compliance-report', authenticateAdminKey, requirePermission('read_
       timestamp: new Date().toISOString()
     });
   } catch (error: any) {
-    console.error('Anthropic compliance report error:', error);
+    logger.error('Anthropic compliance report error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -309,7 +311,7 @@ router.post('/advanced-analysis', authenticateAdminKey, requirePermission('manag
       timestamp: new Date().toISOString()
     });
   } catch (error: any) {
-    console.error('Anthropic advanced analysis error:', error);
+    logger.error('Anthropic advanced analysis error:', error);
     res.status(500).json({ error: error.message });
   }
 });

@@ -6,5 +6,5 @@ export const corsConfig = cors({
     'http://localhost:3000'
   ].filter(Boolean) as string[],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE']
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
 });

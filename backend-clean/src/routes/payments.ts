@@ -1,5 +1,7 @@
 import { Router, Request, Response } from "express";
 import { authenticate, AuthRequest } from "../middleware/auth";
+import prisma from "../lib/prisma";
+import { logger } from "../lib/logger";
 
 const router = Router();
 
@@ -50,7 +52,7 @@ router.post(
         currency: paymentIntent.currency,
       });
     } catch (error: any) {
-      console.error("Create payment intent error:", error);
+      logger.error("Create payment intent error:", error);
       res
         .status(500)
         .json({ error: error.message || "Failed to create payment intent" });
@@ -122,7 +124,7 @@ router.post(
         status: subscription.status,
       });
     } catch (error: any) {
-      console.error("Create subscription error:", error);
+      logger.error("Create subscription error:", error);
       res
         .status(500)
         .json({ error: error.message || "Failed to create subscription" });
@@ -159,7 +161,7 @@ router.post(
         canceledAt: subscription.canceled_at,
       });
     } catch (error: any) {
-      console.error("Cancel subscription error:", error);
+      logger.error("Cancel subscription error:", error);
       res
         .status(500)
         .json({ error: error.message || "Failed to cancel subscription" });
@@ -209,7 +211,7 @@ router.get(
         })),
       });
     } catch (error: any) {
-      console.error("Get subscriptions error:", error);
+      logger.error("Get subscriptions error:", error);
       res
         .status(500)
         .json({ error: error.message || "Failed to get subscriptions" });
@@ -242,7 +244,7 @@ router.post("/webhook", async (req: Request, res: Response) => {
         webhookSecret
       );
     } catch (err: any) {
-      console.error("Webhook signature verification failed:", err.message);
+      logger.error("Webhook signature verification failed:", err.message);
       res.status(400).json({ error: `Webhook Error: ${err.message}` });
       return;
     }
@@ -251,48 +253,226 @@ router.post("/webhook", async (req: Request, res: Response) => {
     switch (event.type) {
       case "payment_intent.succeeded":
         const paymentIntent = event.data.object;
-        console.log("PaymentIntent succeeded:", paymentIntent.id);
-        // TODO: Update database with successful payment
+        logger.info("PaymentIntent succeeded:", paymentIntent.id);
+        try {
+          const userId = paymentIntent.metadata?.userId;
+          if (userId) {
+            const wallet = await prisma.wallet.findFirst({ where: { userId } });
+            if (wallet) {
+              const amount = paymentIntent.amount_received / 100;
+              const currency = paymentIntent.currency.toUpperCase();
+              await prisma.$transaction(async (tx: any) => {
+                // Idempotency: skip if already recorded
+                const existing = await tx.transaction.findFirst({
+                  where: { txHash: paymentIntent.id },
+                });
+                if (existing) return;
+
+                await tx.transaction.create({
+                  data: {
+                    userId,
+                    walletId: wallet.id,
+                    type: "DEPOSIT",
+                    amount,
+                    currency,
+                    status: "COMPLETED",
+                    method: "STRIPE",
+                    txHash: paymentIntent.id,
+                    description: paymentIntent.description || "Stripe payment",
+                    metadata: { stripePaymentIntentId: paymentIntent.id },
+                  },
+                });
+                await tx.wallet.update({
+                  where: { id: wallet.id },
+                  data: { balance: { increment: amount } },
+                });
+                await tx.notification.create({
+                  data: {
+                    userId,
+                    type: "transaction",
+                    title: "Payment Successful",
+                    message: `Your payment of ${amount} ${currency} was successful.`,
+                    read: false,
+                    metadata: { paymentIntentId: paymentIntent.id },
+                  },
+                });
+              });
+            }
+          }
+        } catch (err: any) {
+          logger.error("[Stripe] payment_intent.succeeded DB error:", err.message);
+        }
         break;
 
       case "payment_intent.payment_failed":
         const failedPayment = event.data.object;
-        console.log("PaymentIntent failed:", failedPayment.id);
-        // TODO: Handle failed payment
+        logger.info("PaymentIntent failed:", failedPayment.id);
+        try {
+          const userId = failedPayment.metadata?.userId;
+          if (userId) {
+            const wallet = await prisma.wallet.findFirst({ where: { userId } });
+            if (wallet) {
+              await prisma.transaction.create({
+                data: {
+                  userId,
+                  walletId: wallet.id,
+                  type: "PAYMENT",
+                  amount: failedPayment.amount / 100,
+                  currency: failedPayment.currency.toUpperCase(),
+                  status: "FAILED",
+                  method: "STRIPE",
+                  txHash: `failed_${failedPayment.id}`,
+                  description: failedPayment.last_payment_error?.message || "Payment failed",
+                  metadata: {
+                    stripePaymentIntentId: failedPayment.id,
+                    failureCode: failedPayment.last_payment_error?.code,
+                    failureMessage: failedPayment.last_payment_error?.message,
+                  },
+                },
+              });
+              await prisma.notification.create({
+                data: {
+                  userId,
+                  type: "transaction",
+                  title: "Payment Failed",
+                  message: `Your payment could not be processed. ${failedPayment.last_payment_error?.message || "Please try again."}`,
+                  read: false,
+                  metadata: { paymentIntentId: failedPayment.id },
+                },
+              });
+            }
+          }
+        } catch (err: any) {
+          logger.error("[Stripe] payment_intent.payment_failed DB error:", err.message);
+        }
         break;
 
       case "customer.subscription.created":
       case "customer.subscription.updated":
         const subscription = event.data.object;
-        console.log("Subscription updated:", subscription.id);
-        // TODO: Update user subscription status
+        logger.info("Subscription updated:", subscription.id);
+        try {
+          // Look up userId via existing subscription record or customer metadata
+          const existingSub = await prisma.subscription.findUnique({
+            where: { stripeId: subscription.id },
+          });
+          const userId = existingSub?.userId ||
+            (subscription.metadata?.userId as string) || null;
+          if (userId) {
+            await prisma.subscription.upsert({
+              where: { stripeId: subscription.id },
+              update: {
+                status: subscription.status,
+                currentPeriodStart: new Date(subscription.current_period_start * 1000),
+                currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+              },
+              create: {
+                userId,
+                customerId: subscription.customer as string,
+                planId: subscription.items.data[0]?.price?.product as string || "unknown",
+                stripeId: subscription.id,
+                status: subscription.status,
+                currentPeriodStart: new Date(subscription.current_period_start * 1000),
+                currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+              },
+            });
+          }
+        } catch (err: any) {
+          logger.error("[Stripe] subscription.updated DB error:", err.message);
+        }
         break;
 
       case "customer.subscription.deleted":
         const deletedSubscription = event.data.object;
-        console.log("Subscription deleted:", deletedSubscription.id);
-        // TODO: Remove user subscription
+        logger.info("Subscription deleted:", deletedSubscription.id);
+        try {
+          await prisma.subscription.updateMany({
+            where: { stripeId: deletedSubscription.id },
+            data: { status: "canceled" },
+          });
+        } catch (err: any) {
+          logger.error("[Stripe] subscription.deleted DB error:", err.message);
+        }
         break;
 
       case "invoice.payment_succeeded":
         const invoice = event.data.object;
-        console.log("Invoice paid:", invoice.id);
-        // TODO: Record payment in database
+        logger.info("Invoice paid:", invoice.id);
+        try {
+          const invoiceSub = await prisma.subscription.findFirst({
+            where: { customerId: invoice.customer as string },
+          });
+          if (invoiceSub) {
+            const amount = (invoice.amount_paid || 0) / 100;
+            const currency = (invoice.currency || "usd").toUpperCase();
+            // Ensure period fields exist before using them
+            const existing = await prisma.transaction.findFirst({
+              where: { txHash: invoice.id },
+            });
+            if (!existing) {
+              await prisma.transaction.create({
+                data: {
+                  userId: invoiceSub.userId,
+                  type: "PAYMENT",
+                  amount,
+                  currency,
+                  status: "COMPLETED",
+                  method: "STRIPE_SUBSCRIPTION",
+                  txHash: invoice.id,
+                  description: `Subscription invoice ${invoice.number || invoice.id}`,
+                  metadata: {
+                    invoiceId: invoice.id,
+                    subscriptionId: invoice.subscription,
+                  },
+                },
+              });
+            }
+          }
+        } catch (err: any) {
+          logger.error("[Stripe] invoice.payment_succeeded DB error:", err.message);
+        }
         break;
 
       case "invoice.payment_failed":
         const failedInvoice = event.data.object;
-        console.log("Invoice payment failed:", failedInvoice.id);
-        // TODO: Notify user of failed payment
+        logger.info("Invoice payment failed:", failedInvoice.id);
+        try {
+          const failedSub = await prisma.subscription.findFirst({
+            where: { customerId: failedInvoice.customer as string },
+          });
+          if (failedSub) {
+            await prisma.notification.create({
+              data: {
+                userId: failedSub.userId,
+                type: "billing",
+                title: "Subscription Payment Failed",
+                message: "We were unable to charge your payment method for your subscription. Please update your payment details.",
+                read: false,
+                metadata: {
+                  invoiceId: failedInvoice.id,
+                  subscriptionId: failedInvoice.subscription,
+                  attemptCount: failedInvoice.attempt_count,
+                },
+              },
+            });
+            // Mark subscription as past_due
+            await prisma.subscription.updateMany({
+              where: { stripeId: failedInvoice.subscription as string },
+              data: { status: "past_due" },
+            });
+          }
+        } catch (err: any) {
+          logger.error("[Stripe] invoice.payment_failed DB error:", err.message);
+        }
         break;
 
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        logger.info(`Unhandled event type: ${event.type}`);
     }
 
     res.json({ received: true });
   } catch (error: any) {
-    console.error("Webhook error:", error);
+    logger.error("Webhook error:", error);
     res.status(500).json({ error: "Webhook processing failed" });
   }
 });
@@ -312,24 +492,20 @@ router.post("/nowpayments/webhook", async (req: Request, res: Response) => {
     const payload = JSON.stringify(req.body);
 
     if (!nowPayments.verifyWebhookSignature(payload, signature)) {
-      console.error("Invalid NOWPayments webhook signature");
+      logger.error("Invalid NOWPayments webhook signature");
       res.status(401).json({ error: "Invalid signature" });
       return;
     }
 
     const event = req.body;
-    console.log("NOWPayments webhook received:", {
+    logger.info("NOWPayments webhook received:", {
       payment_id: event.payment_id,
       status: event.payment_status,
       order_id: event.order_id,
     });
 
-    // Import and use the same logic as the crypto webhook
-    const { PrismaClient } = await import("@prisma/client");
-    const prisma = new PrismaClient();
-
-    try {
-      const {
+    // Handle payment status using shared prisma singleton
+    const {
         payment_id,
         payment_status,
         pay_amount,
@@ -346,7 +522,7 @@ router.post("/nowpayments/webhook", async (req: Request, res: Response) => {
       // Handle different payment statuses
       switch (payment_status) {
         case "finished":
-          console.log("✅ Payment completed:", payment_id);
+          logger.info("✅ Payment completed:", payment_id);
           
           await prisma.$transaction(async (tx: any) => {
             const wallet = await tx.wallet.findFirst({
@@ -362,7 +538,7 @@ router.post("/nowpayments/webhook", async (req: Request, res: Response) => {
             });
 
             if (existingDeposit && existingDeposit.status === "CONFIRMED") {
-              console.log(`Deposit ${payment_id} already processed`);
+              logger.info(`Deposit ${payment_id} already processed`);
               return;
             }
 
@@ -437,7 +613,7 @@ router.post("/nowpayments/webhook", async (req: Request, res: Response) => {
               },
             });
 
-            console.log(
+            logger.info(
               `✅ Balance credited: ${depositAmount} ${depositCurrency} to user ${order_id}`
             );
           });
@@ -445,7 +621,7 @@ router.post("/nowpayments/webhook", async (req: Request, res: Response) => {
 
         case "failed":
         case "expired":
-          console.log("❌ Payment failed/expired:", payment_id);
+          logger.info("❌ Payment failed/expired:", payment_id);
           // Record failed payment
           const wallet = await prisma.wallet.findFirst({
             where: { userId: order_id },
@@ -471,7 +647,7 @@ router.post("/nowpayments/webhook", async (req: Request, res: Response) => {
           break;
 
         case "confirming":
-          console.log("⏳ Payment confirming:", payment_id);
+          logger.info("⏳ Payment confirming:", payment_id);
           // Update status to confirming
           const confirmingWallet = await prisma.wallet.findFirst({
             where: { userId: order_id },
@@ -503,15 +679,12 @@ router.post("/nowpayments/webhook", async (req: Request, res: Response) => {
           break;
 
         default:
-          console.log("ℹ️ Payment status update:", payment_status);
+          logger.info("ℹ️ Payment status update:", payment_status);
       }
-    } finally {
-      await prisma.$disconnect();
-    }
 
     res.json({ received: true });
   } catch (error: any) {
-    console.error("NOWPayments webhook error:", error);
+    logger.error("NOWPayments webhook error:", error);
     res.status(200).json({ error: "Processing error logged" });
   }
 });
@@ -555,7 +728,7 @@ router.get(
         })),
       });
     } catch (error: any) {
-      console.error("Get payment history error:", error);
+      logger.error("Get payment history error:", error);
       res
         .status(500)
         .json({ error: error.message || "Failed to get payment history" });

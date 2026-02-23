@@ -1,5 +1,6 @@
 // Circuit Breaker Pattern - DISABLED BY CREATOR
 // Creator chooses direct control, no automated interference
+import { logger } from '../lib/logger';
 
 export class CircuitBreaker {
   // All circuit breaker functionality disabled
@@ -10,7 +11,7 @@ export class CircuitBreaker {
     private timeout: number = 60000,
     private successThreshold: number = 2
   ) {
-    console.log(' Circuit Breaker DISABLED - Creator maintains direct control');
+    logger.info(' Circuit Breaker DISABLED - Creator maintains direct control');
   }
 
   async execute<T>(
@@ -18,7 +19,7 @@ export class CircuitBreaker {
     fallback?: () => Promise<T>
   ): Promise<T> {
     // Direct execution without interference
-    console.log(' Direct execution - Creator in control');
+    logger.info(' Direct execution - Creator in control');
     return await operation();
   }
 
@@ -27,7 +28,7 @@ export class CircuitBreaker {
   }
 
   reset(): void {
-    console.log(' Circuit Breaker remains disabled - Creator choice');
+    logger.info(' Circuit Breaker remains disabled - Creator choice');
   }
 }
 

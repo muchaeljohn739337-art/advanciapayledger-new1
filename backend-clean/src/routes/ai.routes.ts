@@ -11,6 +11,7 @@
 import { Router } from 'express';
 import { gradientAIService } from '../services/gradientAI.service';
 import { authenticate, AuthRequest } from '../middleware/auth';
+import { logger } from "../lib/logger";
 
 const router = Router();
 
@@ -44,7 +45,7 @@ router.post('/chat', authenticate, async (req: AuthRequest, res) => {
       }
     });
   } catch (error: any) {
-    console.error('AI chat error:', error);
+    logger.error('AI chat error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -82,7 +83,7 @@ router.post('/analyze-transaction', authenticate, async (req: AuthRequest, res) 
       timestamp: new Date().toISOString()
     });
   } catch (error: any) {
-    console.error('Transaction analysis error:', error);
+    logger.error('Transaction analysis error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -115,7 +116,7 @@ router.post('/support-response', authenticate, async (req: AuthRequest, res) => 
       timestamp: new Date().toISOString()
     });
   } catch (error: any) {
-    console.error('Support response error:', error);
+    logger.error('Support response error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -147,7 +148,7 @@ router.post('/analyze-behavior', authenticate, async (req: AuthRequest, res) => 
       timestamp: new Date().toISOString()
     });
   } catch (error: any) {
-    console.error('Behavior analysis error:', error);
+    logger.error('Behavior analysis error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -170,7 +171,7 @@ router.get('/models', authenticate, async (req: AuthRequest, res) => {
       count: models.length
     });
   } catch (error: any) {
-    console.error('Get models error:', error);
+    logger.error('Get models error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -190,7 +191,7 @@ router.get('/health', async (req, res) => {
       timestamp: new Date().toISOString()
     });
   } catch (error: any) {
-    console.error('AI health check error:', error);
+    logger.error('AI health check error:', error);
     res.status(500).json({ error: error.message });
   }
 });

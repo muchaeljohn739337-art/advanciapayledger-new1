@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
+import { logger } from "../../lib/logger";
 
 interface SecurityConfig {
   encryption: {
@@ -97,8 +98,8 @@ class SecurityConfigService {
     }
     
     const newKey = crypto.randomBytes(32);
-    console.log('🔑 Generated new encryption key. Save this securely:');
-    console.log(newKey.toString('hex'));
+    logger.info('🔑 Generated new encryption key. Save this securely:');
+    logger.info(newKey.toString('hex'));
     return newKey;
   }
 
@@ -163,7 +164,7 @@ class SecurityConfigService {
   }
 
   private rotateSecrets() {
-    console.log('🔄 Rotating secrets...');
+    logger.info('🔄 Rotating secrets...');
     
     this.encryptionKey = crypto.randomBytes(32);
     
@@ -193,7 +194,7 @@ class SecurityConfigService {
     for (const [key, value] of Object.entries(process.env)) {
       if (sensitivePatterns.some(pattern => pattern.test(key))) {
         if (value && value.length > 20) {
-          console.warn(`⚠️ Potential secret in environment variable: ${key}`);
+          logger.warn(`⚠️ Potential secret in environment variable: ${key}`);
           this.logSecurityEvent('potential_secret_leak', { variable: key, timestamp: new Date() });
         }
       }
@@ -219,7 +220,7 @@ class SecurityConfigService {
           const hasSensitiveName = sensitiveNames.some(name => file.toLowerCase().includes(name));
           
           if (hasSensitiveExtension || hasSensitiveName) {
-            console.warn(`⚠️ Sensitive file detected: ${filePath}`);
+            logger.warn(`⚠️ Sensitive file detected: ${filePath}`);
             this.logSecurityEvent('sensitive_file_detected', { file: filePath, timestamp: new Date() });
           }
         }
@@ -246,7 +247,7 @@ class SecurityConfigService {
         for (const pattern of secretPatterns) {
           const matches = content.match(pattern);
           if (matches) {
-            console.warn(`⚠️ Potential secrets found in log file: ${logFile}`);
+            logger.warn(`⚠️ Potential secrets found in log file: ${logFile}`);
             this.logSecurityEvent('secrets_in_logs', { file: logFile, matches: matches.length, timestamp: new Date() });
           }
         }
@@ -387,7 +388,7 @@ class SecurityConfigService {
   }
 
   private triggerSecurityAlert(alertType: string, metrics: any) {
-    console.error(`🚨 SECURITY ALERT: ${alertType}`, metrics);
+    logger.error(`🚨 SECURITY ALERT: ${alertType}`, metrics);
     this.logSecurityEvent('security_alert', { alertType, metrics, timestamp: new Date() });
   }
 

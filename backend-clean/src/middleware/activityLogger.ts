@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../lib/prisma";
 import { AuthRequest } from "./auth";
+import { logger } from "../lib/logger";
 
 export const activityLogger = async (
   req: AuthRequest,
@@ -33,7 +34,7 @@ async function logActivity(
   try {
     // Only log if user is authenticated and database is available
     if (req.user && prisma) {
-      console.log(
+      logger.info(
         "🔍 Logging activity for user:",
         req.user.userId,
         "Action:",
@@ -42,7 +43,7 @@ async function logActivity(
 
       const userId = req.user.userId;
       if (!userId) {
-        console.log("⚠️ No user ID found in token");
+        logger.info("⚠️ No user ID found in token");
         return;
       }
 
@@ -61,13 +62,13 @@ async function logActivity(
         },
       });
 
-      console.log("✅ Activity logged successfully");
+      logger.info("✅ Activity logged successfully");
     } else {
-      console.log("⚠️ No user or database available for logging");
+      logger.info("⚠️ No user or database available for logging");
     }
   } catch (error) {
     // Don't let logging errors break the application
-    console.error("Failed to log user activity:", error);
+    logger.error("Failed to log user activity:", error);
   }
 }
 

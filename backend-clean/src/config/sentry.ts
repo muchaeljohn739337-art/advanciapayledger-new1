@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/node";
+import { logger } from "../lib/logger";
 
 /**
  * Initialize Sentry for error tracking and performance monitoring
@@ -11,7 +12,7 @@ export function initializeSentry() {
 
   // Don't initialize Sentry in test environment or if DSN is not provided
   if (environment === "test" || !sentryDsn) {
-    console.log("ℹ️  Sentry: Disabled (test environment or DSN not provided)");
+    logger.info("ℹ️  Sentry: Disabled (test environment or DSN not provided)");
     return;
   }
 
@@ -81,8 +82,8 @@ export function initializeSentry() {
     platform: "node",
   });
 
-  console.log(`✅ Sentry initialized (${environment})`);
-  console.log(`📊 Release: ${release}`);
+  logger.info(`✅ Sentry initialized (${environment})`);
+  logger.info(`📊 Release: ${release}`);
 }
 
 /**
@@ -197,9 +198,9 @@ export function sentryErrorHandler(): any {
 export async function closeSentry() {
   try {
     await Sentry.close(2000); // Wait max 2 seconds
-    console.log("✅ Sentry closed gracefully");
+    logger.info("✅ Sentry closed gracefully");
   } catch (error) {
-    console.error("❌ Error closing Sentry:", error);
+    logger.error("❌ Error closing Sentry:", error);
   }
 }
 

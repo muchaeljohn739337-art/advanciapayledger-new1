@@ -2,6 +2,7 @@ import { prisma } from "../lib/prisma";
 import { fraudDetection } from "./fraudDetection";
 import { AuthRequest } from "../middleware/auth";
 import { realTimeMonitoring } from "./realTimeMonitoring";
+import { logger } from "../lib/logger";
 
 export interface PaymentProcessingRequest {
   userId: string;
@@ -130,7 +131,7 @@ export class AdvancedPaymentProcessingService {
         message: "Payment processed successfully",
       };
     } catch (error) {
-      console.error("Payment processing error:", error);
+      logger.error("Payment processing error:", error);
       return {
         success: false,
         riskScore: 0,
@@ -249,7 +250,7 @@ export class AdvancedPaymentProcessingService {
 
       return { withinLimits: true };
     } catch (error) {
-      console.error("Error checking processing limits:", error);
+      logger.error("Error checking processing limits:", error);
       return { withinLimits: false, reason: "Unable to verify limits" };
     }
   }
@@ -303,7 +304,7 @@ export class AdvancedPaymentProcessingService {
 
       return transaction;
     } catch (error) {
-      console.error("Error creating transaction:", error);
+      logger.error("Error creating transaction:", error);
       throw new Error("Failed to create transaction");
     }
   }
@@ -338,7 +339,7 @@ export class AdvancedPaymentProcessingService {
         },
       });
     } catch (error) {
-      console.error("Error updating wallet balance:", error);
+      logger.error("Error updating wallet balance:", error);
       throw new Error("Failed to update wallet balance");
     }
   }
@@ -368,7 +369,7 @@ export class AdvancedPaymentProcessingService {
         metadata: transaction.metadata,
       };
     } catch (error) {
-      console.error("Error getting transaction status:", error);
+      logger.error("Error getting transaction status:", error);
       throw new Error("Failed to get transaction status");
     }
   }
@@ -427,7 +428,7 @@ export class AdvancedPaymentProcessingService {
         },
       };
     } catch (error) {
-      console.error("Error getting transaction history:", error);
+      logger.error("Error getting transaction history:", error);
       throw new Error("Failed to get transaction history");
     }
   }
@@ -490,7 +491,7 @@ export class AdvancedPaymentProcessingService {
         },
       };
     } catch (error) {
-      console.error("Error getting fraud detection logs:", error);
+      logger.error("Error getting fraud detection logs:", error);
       throw new Error("Failed to get fraud detection logs");
     }
   }

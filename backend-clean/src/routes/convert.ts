@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth';
+import { logger } from "../lib/logger";
 
 const router = Router();
 
@@ -30,7 +31,7 @@ router.get('/rates', authenticate, async (req: Request, res: Response) => {
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error('Get rates error:', error);
+    logger.error('Get rates error:', error);
     return res.status(500).json({
       success: false,
       error: 'Failed to fetch exchange rates'
@@ -137,7 +138,7 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       }
     });
   } catch (error) {
-    console.error('Convert error:', error);
+    logger.error('Convert error:', error);
     return res.status(500).json({
       success: false,
       error: 'Failed to process conversion'
@@ -181,7 +182,7 @@ router.get('/history', authenticate, async (req: Request, res: Response) => {
       history
     });
   } catch (error) {
-    console.error('Get history error:', error);
+    logger.error('Get history error:', error);
     return res.status(500).json({
       success: false,
       error: 'Failed to fetch conversion history'

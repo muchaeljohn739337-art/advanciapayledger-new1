@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth';
+import { logger } from "../lib/logger";
 
 const router = Router();
 
@@ -77,7 +78,7 @@ router.post('/create', authenticate, async (req: Request, res: Response) => {
       message: 'Card created successfully'
     });
   } catch (error) {
-    console.error('Create card error:', error);
+    logger.error('Create card error:', error);
     return res.status(500).json({
       success: false,
       error: 'Failed to create card'
@@ -115,7 +116,7 @@ router.get('/my-card', authenticate, async (req: Request, res: Response) => {
       card
     });
   } catch (error) {
-    console.error('Get card error:', error);
+    logger.error('Get card error:', error);
     return res.status(500).json({
       success: false,
       error: 'Failed to fetch card'
@@ -157,7 +158,7 @@ router.post('/update-balance', authenticate, async (req: Request, res: Response)
       message: 'Balance updated successfully'
     });
   } catch (error) {
-    console.error('Update balance error:', error);
+    logger.error('Update balance error:', error);
     return res.status(500).json({
       success: false,
       error: 'Failed to update balance'
@@ -187,7 +188,7 @@ router.post('/activate/:cardId', authenticate, async (req: Request, res: Respons
       message: 'Card activated successfully'
     });
   } catch (error) {
-    console.error('Activate card error:', error);
+    logger.error('Activate card error:', error);
     return res.status(500).json({
       success: false,
       error: 'Failed to activate card'
@@ -217,7 +218,7 @@ router.post('/freeze/:cardId', authenticate, async (req: Request, res: Response)
       message: 'Card frozen successfully'
     });
   } catch (error) {
-    console.error('Freeze card error:', error);
+    logger.error('Freeze card error:', error);
     return res.status(500).json({
       success: false,
       error: 'Failed to freeze card'
@@ -234,7 +235,7 @@ router.get('/all', authenticate, async (req: Request, res: Response) => {
       count: cards.length
     });
   } catch (error) {
-    console.error('Get all cards error:', error);
+    logger.error('Get all cards error:', error);
     return res.status(500).json({
       success: false,
       error: 'Failed to fetch cards'

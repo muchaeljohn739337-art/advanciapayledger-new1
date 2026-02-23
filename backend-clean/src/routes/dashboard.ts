@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authenticate, AuthRequest } from "../middleware/auth";
 import prisma from "../lib/prisma";
+import { logger } from "../lib/logger";
 
 const router = Router();
 
@@ -43,7 +44,7 @@ router.get("/stats", authenticate, async (req: AuthRequest, res) => {
       status: user.status,
     });
   } catch (error) {
-    console.error("Dashboard stats error:", error);
+    logger.error("Dashboard stats error:", error);
     res.status(500).json({ error: "Failed to load dashboard stats" });
   }
 });
@@ -99,7 +100,7 @@ router.get("/transactions", authenticate, async (req: AuthRequest, res) => {
       },
     });
   } catch (error) {
-    console.error("Dashboard transactions error:", error);
+    logger.error("Dashboard transactions error:", error);
     res.status(500).json({ error: "Failed to load transactions" });
   }
 });
@@ -156,7 +157,7 @@ router.get("/admin/stats", authenticate, async (req: AuthRequest, res) => {
       blockedUsers,
     });
   } catch (error) {
-    console.error("Admin stats error:", error);
+    logger.error("Admin stats error:", error);
     res.status(500).json({ error: "Failed to load admin stats" });
   }
 });
@@ -210,7 +211,7 @@ router.get("/admin/activity", authenticate, async (req: AuthRequest, res) => {
       },
     });
   } catch (error) {
-    console.error("Admin activity error:", error);
+    logger.error("Admin activity error:", error);
     res.status(500).json({ error: "Failed to load activity logs" });
   }
 });
@@ -260,7 +261,7 @@ router.get(
         },
       });
     } catch (error) {
-      console.error("Withdrawal history error:", error);
+      logger.error("Withdrawal history error:", error);
       res.status(500).json({ error: "Failed to load withdrawal history" });
     }
   }
@@ -307,7 +308,7 @@ router.get("/medbeds-bookings", authenticate, async (req: AuthRequest, res) => {
       throw tableError;
     }
   } catch (error) {
-    console.error("MedBeds bookings error:", error);
+    logger.error("MedBeds bookings error:", error);
     res.status(500).json({ error: "Failed to load MedBed bookings" });
   }
 });

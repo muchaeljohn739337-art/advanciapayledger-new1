@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events';
 import { humanLoopService } from './humanLoopService';
+import { logger } from "../../lib/logger";
 
 interface UserAdaptationProfile {
   userId: string;
@@ -84,7 +85,7 @@ class UserAdaptationService extends EventEmitter {
   }
 
   private analyzeUserInteractions() {
-    console.log('👤 Analyzing user interactions for adaptation...');
+    logger.info('👤 Analyzing user interactions for adaptation...');
     
     // Track feature usage patterns
     this.trackFeatureUsage();
@@ -173,7 +174,7 @@ class UserAdaptationService extends EventEmitter {
       improve: patterns.struggleWith
     };
 
-    console.log('💡 Generated feature recommendations:', recommendations);
+    logger.info('💡 Generated feature recommendations:', recommendations);
     this.emit('adaptation_recommendations', { type: 'features', data: recommendations });
   }
 
@@ -184,7 +185,7 @@ class UserAdaptationService extends EventEmitter {
       avoid: [metrics.leastEfficientWorkflow]
     };
 
-    console.log('⚡ Generated efficiency recommendations:', recommendations);
+    logger.info('⚡ Generated efficiency recommendations:', recommendations);
     this.emit('adaptation_recommendations', { type: 'efficiency', data: recommendations });
   }
 
@@ -195,7 +196,7 @@ class UserAdaptationService extends EventEmitter {
       buildConfidence: patterns.selfRecovery > 0.5 ? 'advanced' : 'basic'
     };
 
-    console.log('🛠️ Generated recovery recommendations:', recommendations);
+    logger.info('🛠️ Generated recovery recommendations:', recommendations);
     this.emit('adaptation_recommendations', { type: 'recovery', data: recommendations });
   }
 
@@ -206,7 +207,7 @@ class UserAdaptationService extends EventEmitter {
       complete: patterns.tutorialCompletions
     };
 
-    console.log('📚 Generated learning recommendations:', recommendations);
+    logger.info('📚 Generated learning recommendations:', recommendations);
     this.emit('adaptation_recommendations', { type: 'learning', data: recommendations });
   }
 
@@ -356,7 +357,7 @@ class UserAdaptationService extends EventEmitter {
     );
 
     if (!prerequisitesMet) {
-      console.log(`❌ Prerequisites not met for challenge ${challengeId}`);
+      logger.info(`❌ Prerequisites not met for challenge ${challengeId}`);
       return false;
     }
 
@@ -365,7 +366,7 @@ class UserAdaptationService extends EventEmitter {
     profile.lastUpdated = new Date();
 
     this.emit('challenge_started', { userId, challengeId, challenge });
-    console.log(`🚀 User ${userId} started challenge: ${challenge.title}`);
+    logger.info(`🚀 User ${userId} started challenge: ${challenge.title}`);
 
     return true;
   }
@@ -396,13 +397,13 @@ class UserAdaptationService extends EventEmitter {
       this.updateSkillLevel(userId, challenge);
       
       this.emit('challenge_completed', { userId, challengeId, challenge });
-      console.log(`✅ User ${userId} completed challenge: ${challenge.title}`);
+      logger.info(`✅ User ${userId} completed challenge: ${challenge.title}`);
     } else {
       // Record failed attempt
       profile.adaptations.avoided.push(challengeId);
       
       this.emit('challenge_failed', { userId, challengeId, challenge });
-      console.log(`❌ User ${userId} failed challenge: ${challenge.title}`);
+      logger.info(`❌ User ${userId} failed challenge: ${challenge.title}`);
     }
 
     profile.lastUpdated = new Date();
@@ -422,7 +423,7 @@ class UserAdaptationService extends EventEmitter {
 
   private applyChallengeRewards(userId: string, rewards: string[]): void {
     // Apply rewards to user account
-    console.log(`🎁 Applying rewards to user ${userId}:`, rewards);
+    logger.info(`🎁 Applying rewards to user ${userId}:`, rewards);
     
     // This would integrate with your user management system
     this.emit('rewards_applied', { userId, rewards });

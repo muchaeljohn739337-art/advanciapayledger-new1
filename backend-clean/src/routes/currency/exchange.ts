@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authenticate, AuthRequest } from "../../middleware/auth";
 import { currencyService } from "../../services/currencyService";
+import { logger } from "../../lib/logger";
 
 const router = Router();
 
@@ -15,7 +16,7 @@ router.get("/currencies", authenticate, async (req: AuthRequest, res) => {
       lastUpdated: currencyService.getLastRateUpdate(),
     });
   } catch (error) {
-    console.error("Get currencies error:", error);
+    logger.error("Get currencies error:", error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -53,7 +54,7 @@ router.post("/convert", authenticate, async (req: AuthRequest, res) => {
       data: result,
     });
   } catch (error) {
-    console.error("Currency conversion error:", error);
+    logger.error("Currency conversion error:", error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -89,7 +90,7 @@ router.get(
         },
       });
     } catch (error) {
-      console.error("Get exchange rate error:", error);
+      logger.error("Get exchange rate error:", error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -116,7 +117,7 @@ router.get("/wallet/balances", authenticate, async (req: AuthRequest, res) => {
       data: balances,
     });
   } catch (error) {
-    console.error("Get wallet balances error:", error);
+    logger.error("Get wallet balances error:", error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -150,7 +151,7 @@ router.get(
         period: `${days} days`,
       });
     } catch (error) {
-      console.error("Get exchange rate history error:", error);
+      logger.error("Get exchange rate history error:", error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -182,7 +183,7 @@ router.get(
         period: `${days} days`,
       });
     } catch (error) {
-      console.error("Get conversion history error:", error);
+      logger.error("Get conversion history error:", error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -216,7 +217,7 @@ router.post("/validate", authenticate, async (req: AuthRequest, res) => {
       },
     });
   } catch (error) {
-    console.error("Validate currency error:", error);
+    logger.error("Validate currency error:", error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -247,7 +248,7 @@ router.post("/format", authenticate, async (req: AuthRequest, res) => {
       },
     });
   } catch (error) {
-    console.error("Format currency error:", error);
+    logger.error("Format currency error:", error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -278,7 +279,7 @@ router.post("/parse", authenticate, async (req: AuthRequest, res) => {
       },
     });
   } catch (error) {
-    console.error("Parse currency error:", error);
+    logger.error("Parse currency error:", error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -309,7 +310,7 @@ router.post(
         message: "Currency added successfully",
       });
     } catch (error) {
-      console.error("Add currency error:", error);
+      logger.error("Add currency error:", error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -348,7 +349,7 @@ router.put(
         message: "Currency updated successfully",
       });
     } catch (error) {
-      console.error("Update currency error:", error);
+      logger.error("Update currency error:", error);
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -373,7 +374,7 @@ router.get("/status", authenticate, async (req: AuthRequest, res) => {
       },
     });
   } catch (error) {
-    console.error("Get currency status error:", error);
+    logger.error("Get currency status error:", error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",

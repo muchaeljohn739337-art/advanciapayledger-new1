@@ -3,6 +3,7 @@ import { Server, Socket } from "socket.io";
 import jwt from "jsonwebtoken";
 import { prisma } from "../lib/prisma";
 import { verifyToken } from "../utils/jwt";
+import { logger } from "../lib/logger";
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;
@@ -66,7 +67,7 @@ export class SocketService {
 
         next();
       } catch (error) {
-        console.error("Socket authentication error:", error);
+        logger.error("Socket authentication error:", error);
         next(new Error("Authentication failed"));
       }
     });
@@ -74,7 +75,7 @@ export class SocketService {
 
   private setupEventHandlers(): void {
     this.io.on("connection", (socket: AuthenticatedSocket) => {
-      console.log(`✓ User connected: ${socket.userEmail} (${socket.id})`);
+      logger.info(`✓ User connected: ${socket.userEmail} (${socket.id})`);
 
       // Register user connection
       if (socket.userId && socket.userEmail && socket.userRole) {
@@ -103,7 +104,7 @@ export class SocketService {
       socket.on("register:notifications", async () => {
         if (socket.userId) {
           socket.join("notifications");
-          console.log(`User ${socket.userEmail} registered for notifications`);
+          logger.info(`User ${socket.userEmail} registered for notifications`);
           socket.emit("notifications:registered", { success: true });
         }
       });
@@ -129,7 +130,7 @@ export class SocketService {
       // Handle payment status updates subscription
       socket.on("subscribe:payment", (data: { paymentId: string }) => {
         socket.join(`payment:${data.paymentId}`);
-        console.log(
+        logger.info(
           `User ${socket.userEmail} subscribed to payment ${data.paymentId}`
         );
       });
@@ -142,7 +143,7 @@ export class SocketService {
       socket.on("subscribe:transactions", () => {
         if (socket.userId) {
           socket.join(`transactions:${socket.userId}`);
-          console.log(
+          logger.info(
             `User ${socket.userEmail} subscribed to transaction updates`
           );
         }
@@ -150,7 +151,7 @@ export class SocketService {
 
       // Handle disconnect
       socket.on("disconnect", () => {
-        console.log(`✗ User disconnected: ${socket.userEmail} (${socket.id})`);
+        logger.info(`✗ User disconnected: ${socket.userEmail} (${socket.id})`);
         if (socket.userId) {
           this.connectedUsers.delete(socket.userId);
         }
@@ -158,7 +159,7 @@ export class SocketService {
 
       // Handle errors
       socket.on("error", (error) => {
-        console.error(`Socket error for user ${socket.userEmail}:`, error);
+        logger.error(`Socket error for user ${socket.userEmail}:`, error);
       });
     });
   }
@@ -224,7 +225,7 @@ let socketService: SocketService | null = null;
 export function initializeSocketService(httpServer: HTTPServer): SocketService {
   if (!socketService) {
     socketService = new SocketService(httpServer);
-    console.log("✓ Socket.IO service initialized with authentication");
+    logger.info("✓ Socket.IO service initialized with authentication");
   }
   return socketService;
 }

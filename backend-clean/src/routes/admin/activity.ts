@@ -2,6 +2,7 @@ import { Router } from "express";
 import { authenticate, requireRole, AuthRequest } from "../../middleware/auth";
 import { activityLogger } from "../../middleware/activityLogger";
 import { prisma } from "../../lib/prisma";
+import { logger } from "../../lib/logger";
 
 const router = Router();
 
@@ -39,7 +40,7 @@ router.get(
         },
       });
     } catch (error) {
-      console.error("Error fetching activity logs:", error);
+      logger.error("Error fetching activity logs:", error);
       res.status(500).json({ error: "Failed to fetch activity logs" });
     }
   }
@@ -79,7 +80,7 @@ router.get("/my-activity", authenticate, async (req: AuthRequest, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching user activity logs:", error);
+    logger.error("Error fetching user activity logs:", error);
     res.status(500).json({ error: "Failed to fetch activity logs" });
   }
 });
@@ -177,7 +178,7 @@ router.get(
         mostActiveUsers: mostActiveUsersWithDetails,
       });
     } catch (error) {
-      console.error("Error fetching activity summary:", error);
+      logger.error("Error fetching activity summary:", error);
       res.status(500).json({ error: "Failed to fetch activity summary" });
     }
   }

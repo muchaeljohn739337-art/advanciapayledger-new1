@@ -2,6 +2,7 @@ import { Server, Socket } from "socket.io";
 import { createServer } from "http";
 import { prisma } from "../lib/prisma";
 import { fraudDetection } from "./fraudDetection";
+import { logger } from "../lib/logger";
 
 export interface TransactionAlert {
   id: string;
@@ -69,7 +70,7 @@ export class RealTimeMonitoringService {
 
   private initializeSocketHandlers() {
     this.io.on("connection", (socket) => {
-      console.log(`User connected to real-time monitoring: ${socket.id}`);
+      logger.info(`User connected to real-time monitoring: ${socket.id}`);
 
       // Handle user authentication for monitoring
       socket.on(
@@ -95,13 +96,13 @@ export class RealTimeMonitoringService {
               const userAlerts = this.alertCache.get(data.userId) || [];
               socket.emit("initial_alerts", userAlerts);
 
-              console.log(`User ${data.userId} authenticated for monitoring`);
+              logger.info(`User ${data.userId} authenticated for monitoring`);
               socket.emit("authenticated", { success: true });
             } else {
               socket.emit("authentication_error", { error: "Invalid user" });
             }
           } catch (error) {
-            console.error("Authentication error:", error);
+            logger.error("Authentication error:", error);
             socket.emit("authentication_error", {
               error: "Authentication failed",
             });
@@ -118,7 +119,7 @@ export class RealTimeMonitoringService {
             socket.emit("alert_acknowledged", { alertId: data.alertId });
           }
         } catch (error) {
-          console.error("Error acknowledging alert:", error);
+          logger.error("Error acknowledging alert:", error);
           socket.emit("error", { message: "Failed to acknowledge alert" });
         }
       });
@@ -135,7 +136,7 @@ export class RealTimeMonitoringService {
             }
           }
         }
-        console.log(`User disconnected from monitoring: ${socket.id}`);
+        logger.info(`User disconnected from monitoring: ${socket.id}`);
       });
     });
   }
@@ -408,9 +409,9 @@ export class RealTimeMonitoringService {
   private async storeAlert(alert: TransactionAlert) {
     try {
       // Store in database (would need Alert model in schema)
-      console.log(`Storing alert: ${alert.id} for user ${alert.userId}`);
+      logger.info(`Storing alert: ${alert.id} for user ${alert.userId}`);
     } catch (error) {
-      console.error("Error storing alert:", error);
+      logger.error("Error storing alert:", error);
     }
   }
 
@@ -424,7 +425,7 @@ export class RealTimeMonitoringService {
         this.io.to("admin_monitoring").emit("admin_alert", alert);
       }
 
-      console.log(
+      logger.info(
         `Alert sent: ${alert.type} - ${alert.title} to user ${alert.userId}`
       );
     }
@@ -466,7 +467,7 @@ export class RealTimeMonitoringService {
         }
       }
     } catch (error) {
-      console.error("Error checking rapid transactions:", error);
+      logger.error("Error checking rapid transactions:", error);
     }
   }
 
@@ -482,9 +483,9 @@ export class RealTimeMonitoringService {
         this.alertCache.set(userId, filteredAlerts);
       }
 
-      console.log("Cleaned old alerts from cache");
+      logger.info("Cleaned old alerts from cache");
     } catch (error) {
-      console.error("Error cleaning old alerts:", error);
+      logger.error("Error cleaning old alerts:", error);
     }
   }
 
@@ -495,10 +496,10 @@ export class RealTimeMonitoringService {
 
       if (alert) {
         alert.isRead = true;
-        console.log(`Alert ${alertId} marked as read by user ${userId}`);
+        logger.info(`Alert ${alertId} marked as read by user ${userId}`);
       }
     } catch (error) {
-      console.error("Error marking alert as read:", error);
+      logger.error("Error marking alert as read:", error);
     }
   }
 
@@ -519,7 +520,7 @@ export class RealTimeMonitoringService {
     };
 
     this.monitoringRules.set(newRule.id, newRule);
-    console.log(`Added monitoring rule: ${newRule.name}`);
+    logger.info(`Added monitoring rule: ${newRule.name}`);
 
     return newRule;
   }
@@ -534,14 +535,14 @@ export class RealTimeMonitoringService {
     const updatedRule = { ...rule, ...updates };
     this.monitoringRules.set(ruleId, updatedRule);
 
-    console.log(`Updated monitoring rule: ${updatedRule.name}`);
+    logger.info(`Updated monitoring rule: ${updatedRule.name}`);
     return updatedRule;
   }
 
   async deleteMonitoringRule(ruleId: string): Promise<boolean> {
     const deleted = this.monitoringRules.delete(ruleId);
     if (deleted) {
-      console.log(`Deleted monitoring rule: ${ruleId}`);
+      logger.info(`Deleted monitoring rule: ${ruleId}`);
     }
     return deleted;
   }

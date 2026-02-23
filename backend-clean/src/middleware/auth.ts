@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyToken, JWTPayload } from "../utils/jwt";
+import { isBlacklisted } from "../utils/tokenBlacklist";
 
 export interface AuthRequest extends Request {
   user?: JWTPayload;
@@ -19,6 +20,12 @@ export function authenticate(
     }
 
     const token = authHeader.substring(7);
+
+    if (isBlacklisted(token)) {
+      res.status(401).json({ error: "Token has been revoked" });
+      return;
+    }
+
     const payload = verifyToken(token);
 
     req.user = payload;
@@ -55,7 +62,7 @@ export function requireRole(requiredRole: string) {
       return;
     }
 
-    if (req.user.role !== requiredRole && req.user.role !== "ADMIN") {
+    if (req.user.role !== requiredRole && req.user.role !== "ADMIN" && req.user.role !== "SUPER_ADMIN") {
       res.status(403).json({ error: "Insufficient permissions" });
       return;
     }

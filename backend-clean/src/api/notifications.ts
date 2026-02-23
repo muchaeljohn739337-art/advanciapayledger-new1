@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { logger } from '../lib/logger';
 
 const router = Router();
 
@@ -31,7 +32,7 @@ router.post('/order-card', async (req: Request, res: Response) => {
     notifications.unshift(notification);
 
     // In production, send real-time notification via WebSocket or push notification
-    console.log('🔔 ADMIN NOTIFICATION:', notification.message);
+    logger.info('🔔 ADMIN NOTIFICATION:', notification.message);
 
     return res.json({
       success: true,
@@ -39,7 +40,7 @@ router.post('/order-card', async (req: Request, res: Response) => {
       notificationId: notification.id
     });
   } catch (error) {
-    console.error('Notification error:', error);
+    logger.error('Notification error:', error);
     return res.status(500).json({
       success: false,
       error: 'Failed to send notification'
@@ -63,7 +64,7 @@ router.post('/link-click', async (req: Request, res: Response) => {
 
     notifications.unshift(notification);
 
-    console.log('🔔 ADMIN NOTIFICATION:', notification.message);
+    logger.info('🔔 ADMIN NOTIFICATION:', notification.message);
 
     return res.json({
       success: true,
@@ -71,7 +72,7 @@ router.post('/link-click', async (req: Request, res: Response) => {
       notificationId: notification.id
     });
   } catch (error) {
-    console.error('Link tracking error:', error);
+    logger.error('Link tracking error:', error);
     return res.status(500).json({
       success: false,
       error: 'Failed to track link click'
@@ -95,7 +96,7 @@ router.post('/onboarding', async (req: Request, res: Response) => {
 
     notifications.unshift(notification);
 
-    console.log('🔔 ADMIN NOTIFICATION:', notification.message);
+    logger.info('🔔 ADMIN NOTIFICATION:', notification.message);
 
     return res.json({
       success: true,
@@ -103,7 +104,7 @@ router.post('/onboarding', async (req: Request, res: Response) => {
       notificationId: notification.id
     });
   } catch (error) {
-    console.error('Onboarding tracking error:', error);
+    logger.error('Onboarding tracking error:', error);
     return res.status(500).json({
       success: false,
       error: 'Failed to track onboarding'
@@ -121,7 +122,7 @@ router.get('/admin/all', async (req: Request, res: Response) => {
       notifications
     });
   } catch (error) {
-    console.error('Get notifications error:', error);
+    logger.error('Get notifications error:', error);
     return res.status(500).json({
       success: false,
       error: 'Failed to fetch notifications'
@@ -149,7 +150,7 @@ router.patch('/admin/:id/read', async (req: Request, res: Response) => {
       message: 'Notification marked as read'
     });
   } catch (error) {
-    console.error('Mark read error:', error);
+    logger.error('Mark read error:', error);
     return res.status(500).json({
       success: false,
       error: 'Failed to mark notification as read'
@@ -166,7 +167,7 @@ router.delete('/admin/clear', async (req: Request, res: Response) => {
       message: 'All notifications cleared'
     });
   } catch (error) {
-    console.error('Clear notifications error:', error);
+    logger.error('Clear notifications error:', error);
     return res.status(500).json({
       success: false,
       error: 'Failed to clear notifications'

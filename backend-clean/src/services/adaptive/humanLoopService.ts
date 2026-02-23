@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events';
+import { logger } from "../../lib/logger";
 
 interface UserBehaviorPattern {
   userId: string;
@@ -80,7 +81,7 @@ class HumanLoopService extends EventEmitter {
     // This would connect to your analytics/monitoring system
     // For now, we'll simulate pattern detection
     
-    console.log('🔍 Analyzing user behavior patterns...');
+    logger.info('🔍 Analyzing user behavior patterns...');
     
     // Detect workflow preferences
     this.detectWorkflowPreferences();
@@ -152,7 +153,7 @@ class HumanLoopService extends EventEmitter {
 
   // Adapt workflows based on user patterns
   private adaptWorkflow(insights: any) {
-    console.log('🔄 Adapting workflows to user preferences...');
+    logger.info('🔄 Adapting workflows to user preferences...');
     
     const adaptations: SystemAdaptation[] = [
       {
@@ -175,7 +176,7 @@ class HumanLoopService extends EventEmitter {
 
   // Adapt interface based on user patterns
   private adaptInterface(insights: any) {
-    console.log('🎨 Adapting interface to user preferences...');
+    logger.info('🎨 Adapting interface to user preferences...');
     
     const adaptations: SystemAdaptation[] = [
       {
@@ -198,7 +199,7 @@ class HumanLoopService extends EventEmitter {
 
   // Adapt error handling based on patterns
   private adaptErrorHandling(insights: any) {
-    console.log('🛠️ Adapting error handling to user patterns...');
+    logger.info('🛠️ Adapting error handling to user patterns...');
     
     const adaptations: SystemAdaptation[] = [
       {
@@ -254,7 +255,7 @@ class HumanLoopService extends EventEmitter {
 
   // Apply adaptation
   private applyAdaptation(adaptation: SystemAdaptation) {
-    console.log(`✅ Applying adaptation: ${adaptation.reason}`);
+    logger.info(`✅ Applying adaptation: ${adaptation.reason}`);
     
     // Apply the changes to the system
     this.implementChanges(adaptation.changes);
@@ -268,7 +269,7 @@ class HumanLoopService extends EventEmitter {
     // This would integrate with your actual system
     // For now, we'll log the changes
     
-    console.log('🔧 Implementing system changes:', changes);
+    logger.info('🔧 Implementing system changes:', changes);
     
     // Emit changes to relevant parts of the system
     this.emit('system_changes_applied', changes);
@@ -281,7 +282,7 @@ class HumanLoopService extends EventEmitter {
       const effectiveness = this.calculateEffectiveness(adaptation);
       adaptation.effectiveness = effectiveness;
       
-      console.log(`📊 Adaptation effectiveness: ${effectiveness}%`);
+      logger.info(`📊 Adaptation effectiveness: ${effectiveness}%`);
       
       if (effectiveness < 50) {
         this.emit('adaptation_ineffective', adaptation);
@@ -334,7 +335,7 @@ class HumanLoopService extends EventEmitter {
   addNonNegotiableRule(rule: string): void {
     if (!this.nonNegotiableRules.includes(rule)) {
       this.nonNegotiableRules.push(rule);
-      console.log(`📋 Added non-negotiable rule: ${rule}`);
+      logger.info(`📋 Added non-negotiable rule: ${rule}`);
     }
   }
 
@@ -344,7 +345,7 @@ class HumanLoopService extends EventEmitter {
     // For now, we'll assume security adaptations are always checked
     
     if (adaptation.type === 'security') {
-      console.log('🔒 Security adaptation requires additional verification');
+      logger.info('🔒 Security adaptation requires additional verification');
       return true;
     }
     

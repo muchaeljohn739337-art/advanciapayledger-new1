@@ -1,11 +1,14 @@
 import { Router } from 'express';
 import { humanLoopService } from '../services/adaptive/humanLoopService';
 import { userAdaptationService } from '../services/adaptive/userAdaptationService';
+import { logger } from "../lib/logger";
+import { authenticate, AuthRequest } from '../middleware/auth';
+import { authenticateAdminKey } from '../middleware/adminAuth';
 
 const router = Router();
 
-// Get human loop status
-router.get('/human-loop/status', async (req, res) => {
+// Get human loop status (admin only)
+router.get('/human-loop/status', authenticateAdminKey, async (req, res) => {
   try {
     const stats = humanLoopService.getAdaptationStats();
     const rules = humanLoopService.getNonNegotiableRules();
@@ -19,15 +22,18 @@ router.get('/human-loop/status', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Failed to get human loop status:', error);
+    logger.error('Failed to get human loop status:', error);
     res.status(500).json({ error: 'Failed to get human loop status' });
   }
 });
 
 // Get user adaptations
-router.get('/user/:userId/adaptations', async (req, res) => {
+router.get('/user/:userId/adaptations', authenticate, async (req: AuthRequest, res) => {
   try {
     const { userId } = req.params;
+    if (req.user?.userId !== userId) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
     const profile = userAdaptationService.getUserProfile(userId);
     const challenges = userAdaptationService.getAvailableChallenges(userId);
     
@@ -37,15 +43,18 @@ router.get('/user/:userId/adaptations', async (req, res) => {
       availableChallenges: challenges
     });
   } catch (error) {
-    console.error('Failed to get user adaptations:', error);
+    logger.error('Failed to get user adaptations:', error);
     res.status(500).json({ error: 'Failed to get user adaptations' });
   }
 });
 
 // Start adaptation challenge
-router.post('/user/:userId/challenges/:challengeId/start', async (req, res) => {
+router.post('/user/:userId/challenges/:challengeId/start', authenticate, async (req: AuthRequest, res) => {
   try {
-    const { userId, challengeId } = req.params;
+    const { userId, challengeId } = req.params as { userId: string; challengeId: string };
+    if (req.user?.userId !== userId) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
     
     const success = userAdaptationService.startChallenge(userId, challengeId);
     
@@ -61,15 +70,18 @@ router.post('/user/:userId/challenges/:challengeId/start', async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('Failed to start challenge:', error);
+    logger.error('Failed to start challenge:', error);
     res.status(500).json({ error: 'Failed to start challenge' });
   }
 });
 
 // Complete adaptation challenge
-router.post('/user/:userId/challenges/:challengeId/complete', async (req, res) => {
+router.post('/user/:userId/challenges/:challengeId/complete', authenticate, async (req: AuthRequest, res) => {
   try {
-    const { userId, challengeId } = req.params;
+    const { userId, challengeId } = req.params as { userId: string; challengeId: string };
+    if (req.user?.userId !== userId) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
     const { success } = req.body;
     
     userAdaptationService.completeChallenge(userId, challengeId, success);
@@ -79,15 +91,18 @@ router.post('/user/:userId/challenges/:challengeId/complete', async (req, res) =
       message: 'Challenge completion recorded'
     });
   } catch (error) {
-    console.error('Failed to complete challenge:', error);
+    logger.error('Failed to complete challenge:', error);
     res.status(500).json({ error: 'Failed to complete challenge' });
   }
 });
 
 // Get adaptation recommendations
-router.get('/user/:userId/recommendations', async (req, res) => {
+router.get('/user/:userId/recommendations', authenticate, async (req: AuthRequest, res) => {
   try {
     const { userId } = req.params;
+    if (req.user?.userId !== userId) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
     
     // This would generate personalized recommendations
     const recommendations = {
@@ -102,31 +117,31 @@ router.get('/user/:userId/recommendations', async (req, res) => {
       recommendations
     });
   } catch (error) {
-    console.error('Failed to get recommendations:', error);
+    logger.error('Failed to get recommendations:', error);
     res.status(500).json({ error: 'Failed to get recommendations' });
   }
 });
 
-// Submit human approval for system adaptation
-router.post('/human-loop/approve', async (req, res) => {
+// Submit human approval for system adaptation (admin only)
+router.post('/human-loop/approve', authenticateAdminKey, async (req, res) => {
   try {
     const { adaptationId, decision, reason } = req.body;
     
     // Process human approval decision
-    console.log(`👤 Human approval received: ${decision} for adaptation ${adaptationId}`);
+    logger.info(`👤 Human approval received: ${decision} for adaptation ${adaptationId}`);
     
     res.json({
       success: true,
       message: 'Human approval recorded'
     });
   } catch (error) {
-    console.error('Failed to record human approval:', error);
+    logger.error('Failed to record human approval:', error);
     res.status(500).json({ error: 'Failed to record human approval' });
   }
 });
 
-// Get system adaptations history
-router.get('/adaptations/history', async (req, res) => {
+// Get system adaptations history (admin only)
+router.get('/adaptations/history', authenticateAdminKey, async (req, res) => {
   try {
     const adaptations = humanLoopService.getAdaptations();
     
@@ -136,13 +151,13 @@ router.get('/adaptations/history', async (req, res) => {
       total: adaptations.length
     });
   } catch (error) {
-    console.error('Failed to get adaptations history:', error);
+    logger.error('Failed to get adaptations history:', error);
     res.status(500).json({ error: 'Failed to get adaptations history' });
   }
 });
 
-// Add non-negotiable rule
-router.post('/human-loop/rules', async (req, res) => {
+// Add non-negotiable rule (admin only)
+router.post('/human-loop/rules', authenticateAdminKey, async (req, res) => {
   try {
     const { rule } = req.body;
     
@@ -153,13 +168,13 @@ router.post('/human-loop/rules', async (req, res) => {
       message: 'Non-negotiable rule added'
     });
   } catch (error) {
-    console.error('Failed to add non-negotiable rule:', error);
+    logger.error('Failed to add non-negotiable rule:', error);
     res.status(500).json({ error: 'Failed to add non-negotiable rule' });
   }
 });
 
-// Get adaptation statistics
-router.get('/stats', async (req, res) => {
+// Get adaptation statistics (admin only)
+router.get('/stats', authenticateAdminKey, async (req, res) => {
   try {
     const humanLoopStats = humanLoopService.getAdaptationStats();
     const userAdaptationStats = userAdaptationService.getAdaptationStats();
@@ -172,7 +187,7 @@ router.get('/stats', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Failed to get adaptation statistics:', error);
+    logger.error('Failed to get adaptation statistics:', error);
     res.status(500).json({ error: 'Failed to get adaptation statistics' });
   }
 });

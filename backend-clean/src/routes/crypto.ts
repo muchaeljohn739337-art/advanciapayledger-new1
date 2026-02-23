@@ -1,7 +1,9 @@
 import { Request, Response, Router } from "express";
 import { authenticate, AuthRequest } from "../middleware/auth";
+import prisma from "../lib/prisma";
 import { getNowPaymentsService } from "../services/nowPaymentsService";
 import { validateCryptoAddress } from "../utils/walletValidation";
+import { logger } from "../lib/logger";
 
 const router = Router();
 
@@ -36,7 +38,7 @@ router.post(
         order_id: orderId || `order_${Date.now()}`,
         order_description: description || "Crypto payment",
         ipn_callback_url: `${
-          process.env.BACKEND_URL || "http://localhost:3001"
+          process.env.BACKEND_URL || "http://localhost:4000"
         }/api/crypto/webhook`,
         success_url: `${baseUrl}/payment/success`,
         cancel_url: `${baseUrl}/payment/cancel`,
@@ -50,7 +52,7 @@ router.post(
         payCurrency: payment.pay_currency,
       });
     } catch (error: any) {
-      console.error("Create crypto payment error:", error);
+      logger.error("Create crypto payment error:", error);
       res
         .status(500)
         .json({ error: error.message || "Failed to create crypto payment" });
@@ -90,7 +92,7 @@ router.get(
         isFinal: nowPayments.isFinalStatus(String(status.payment_status)),
       });
     } catch (error: any) {
-      console.error("Get payment status error:", error);
+      logger.error("Get payment status error:", error);
       res
         .status(500)
         .json({ error: error.message || "Failed to get payment status" });
@@ -119,7 +121,7 @@ router.get(
         count: currencies.length,
       });
     } catch (error: any) {
-      console.error("Get currencies error:", error);
+      logger.error("Get currencies error:", error);
       res
         .status(500)
         .json({ error: error.message || "Failed to get currencies" });
@@ -160,7 +162,7 @@ router.post(
 
       res.json(estimate);
     } catch (error: any) {
-      console.error("Get estimate error:", error);
+      logger.error("Get estimate error:", error);
       res
         .status(500)
         .json({ error: error.message || "Failed to get estimate" });
@@ -190,7 +192,7 @@ router.post(
         address,
       });
     } catch (error: any) {
-      console.error("Validate address error:", error);
+      logger.error("Validate address error:", error);
       res.status(500).json({ error: "Failed to validate address" });
     }
   }
@@ -209,13 +211,13 @@ router.post("/webhook", async (req: Request, res: Response) => {
     const payload = JSON.stringify(req.body);
 
     if (!nowPayments.verifyWebhookSignature(payload, signature)) {
-      console.error("Invalid webhook signature");
+      logger.error("Invalid webhook signature");
       res.status(401).json({ error: "Invalid signature" });
       return;
     }
 
     const event = req.body;
-    console.log("NOWPayments webhook received:", {
+    logger.info("NOWPayments webhook received:", {
       payment_id: event.payment_id,
       status: event.payment_status,
       order_id: event.order_id,
@@ -239,12 +241,9 @@ router.post("/webhook", async (req: Request, res: Response) => {
     // Handle different payment statuses
     switch (payment_status) {
       case "finished":
-        console.log("✅ Payment completed:", payment_id);
+        logger.info("✅ Payment completed:", payment_id);
         // CRITICAL: Update database with successful payment
         try {
-          const { PrismaClient } = await import("@prisma/client");
-          const prisma = new PrismaClient();
-
           await prisma.$transaction(async (tx: any) => {
             // Find user's wallet using order_id (should be userId)
             const wallet = await tx.wallet.findFirst({
@@ -261,7 +260,7 @@ router.post("/webhook", async (req: Request, res: Response) => {
             });
 
             if (existingDeposit && existingDeposit.status === "CONFIRMED") {
-              console.log(`Deposit ${payment_id} already processed`);
+              logger.info(`Deposit ${payment_id} already processed`);
               return;
             }
 
@@ -340,15 +339,13 @@ router.post("/webhook", async (req: Request, res: Response) => {
               },
             });
 
-            console.log(
+            logger.info(
               `✅ Balance credited: ${depositAmount} ${depositCurrency} to user ${order_id}`
             );
-            console.log(`   New balance: ${updatedWallet.balance}`);
+            logger.info(`   New balance: ${updatedWallet.balance}`);
           });
-
-          await prisma.$disconnect();
         } catch (dbError: any) {
-          console.error("Database update error:", dbError);
+          logger.error("Database update error:", dbError);
           // Still return 200 to prevent NOWPayments from retrying
           // Log error for manual review
         }
@@ -356,12 +353,9 @@ router.post("/webhook", async (req: Request, res: Response) => {
 
       case "failed":
       case "expired":
-        console.log("❌ Payment failed/expired:", payment_id);
+        logger.info("❌ Payment failed/expired:", payment_id);
         // Record failed payment for tracking
         try {
-          const { PrismaClient } = await import("@prisma/client");
-          const prisma = new PrismaClient();
-
           const wallet = await prisma.wallet.findFirst({
             where: { userId: order_id },
           });
@@ -386,20 +380,15 @@ router.post("/webhook", async (req: Request, res: Response) => {
               },
             });
           }
-
-          await prisma.$disconnect();
         } catch (dbError: any) {
-          console.error("Failed payment recording error:", dbError);
+          logger.error("Failed payment recording error:", dbError);
         }
         break;
 
       case "confirming":
-        console.log("⏳ Payment confirming:", payment_id);
+        logger.info("⏳ Payment confirming:", payment_id);
         // Update status to confirming
         try {
-          const { PrismaClient } = await import("@prisma/client");
-          const prisma = new PrismaClient();
-
           const wallet = await prisma.wallet.findFirst({
             where: { userId: order_id },
           });
@@ -427,26 +416,24 @@ router.post("/webhook", async (req: Request, res: Response) => {
               },
             });
           }
-
-          await prisma.$disconnect();
         } catch (dbError: any) {
-          console.error("Confirming status update error:", dbError);
+          logger.error("Confirming status update error:", dbError);
         }
         break;
 
       case "partially_paid":
-        console.log("⚠️ Payment partially paid:", payment_id);
+        logger.info("⚠️ Payment partially paid:", payment_id);
         // Log for manual review - don't credit balance
         break;
 
       default:
-        console.log("ℹ️ Payment status update:", payment_status);
+        logger.info("ℹ️ Payment status update:", payment_status);
     }
 
     // Always return 200 to acknowledge receipt
     res.json({ received: true });
   } catch (error: any) {
-    console.error("Webhook error:", error);
+    logger.error("Webhook error:", error);
     // Still return 200 to prevent retries that could cause issues
     res.status(200).json({ error: "Processing error logged" });
   }

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { logger } from './errorHandler';
+import { logger } from '../lib/logger';
 
 // Graceful degradation middleware - isolates errors to prevent system-wide failures
 export function isolateErrors(

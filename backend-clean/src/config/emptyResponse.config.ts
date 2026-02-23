@@ -164,6 +164,8 @@ export function getEmptyResponseTemplate(method: string): any {
 /**
  * Log empty response
  */
+import { logger } from "../lib/logger";
+
 export function logEmptyResponse(req: any): void {
   if (EMPTY_RESPONSE_CONFIG.LOGGING.ENABLED) {
     const message = EMPTY_RESPONSE_CONFIG.LOGGING.FORMAT
@@ -171,7 +173,7 @@ export function logEmptyResponse(req: any): void {
       .replace('{path}', req.path)
       .replace('{ip}', req.ip);
     
-    console.log(message);
+    logger.info(message);
   }
 }
 
