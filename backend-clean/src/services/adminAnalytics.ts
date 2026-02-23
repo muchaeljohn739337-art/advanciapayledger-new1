@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma";
+import os from 'os';
 
 export interface AnalyticsData {
   overview: {
@@ -838,12 +839,19 @@ export class AdminAnalyticsService {
   }
 
   private async getSystemLoad() {
-    // Mock system load data
+    const totalMem = os.totalmem();
+    const freeMem = os.freemem();
+    const usedMem = totalMem - freeMem;
+    const cpuLoad = os.loadavg()[0]; // 1-minute load average
+    const cpuCount = os.cpus().length;
+    // Normalize CPU load: loadavg / cpuCount gives a 0..1+ ratio; cap at 100%
+    const cpuPercent = Math.min(Math.round((cpuLoad / cpuCount) * 100 * 100) / 100, 100);
+    const memPercent = Math.round((usedMem / totalMem) * 100 * 100) / 100;
     return {
-      cpu: Math.random() * 100,
-      memory: Math.random() * 100,
-      disk: Math.random() * 100,
-      network: Math.random() * 100,
+      cpu: cpuPercent,
+      memory: memPercent,
+      disk: 0,    // real disk I/O requires statfs — placeholder
+      network: 0, // real network counters require /proc/net/dev — placeholder
     };
   }
 }

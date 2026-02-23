@@ -1,5 +1,7 @@
 import { Router, Request, Response } from 'express';
-import { authenticate } from '../middleware/auth';
+import { authenticate, AuthRequest } from '../middleware/auth';
+import { authenticateAdminKey } from '../middleware/adminAuth';
+import { randomInt, randomUUID } from 'crypto';
 import { logger } from "../lib/logger";
 
 const router = Router();
@@ -20,16 +22,16 @@ interface Card {
 
 let cards: Card[] = [];
 
-// Generate random card number
+// Generate cryptographically random card number
 const generateCardNumber = (): string => {
   const bin = '424242'; // Test BIN
-  const accountNumber = Math.floor(Math.random() * 10000000000).toString().padStart(10, '0');
+  const accountNumber = Array.from({ length: 10 }, () => randomInt(0, 10)).join('');
   return bin + accountNumber;
 };
 
-// Generate CVV
+// Generate cryptographically random CVV
 const generateCVV = (): string => {
-  return Math.floor(Math.random() * 900 + 100).toString();
+  return randomInt(100, 1000).toString();
 };
 
 // Generate expiry date (3 years from now)
@@ -41,10 +43,11 @@ const generateExpiryDate = (): string => {
 };
 
 // Create card for user (called on registration)
-router.post('/create', authenticate, async (req: Request, res: Response) => {
+router.post('/create', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const userId = (req as any).user.id;
-    const userName = (req as any).user.name || 'Card Holder';
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const userName = req.user?.email || 'Card Holder';
 
     // Check if user already has a card
     const existingCard = cards.find(card => card.userId === userId);
@@ -58,7 +61,7 @@ router.post('/create', authenticate, async (req: Request, res: Response) => {
 
     // Create new card
     const newCard: Card = {
-      id: `card_${Date.now()}`,
+      id: randomUUID(),
       userId,
       cardNumber: generateCardNumber(),
       cardholderName: userName,
@@ -87,17 +90,18 @@ router.post('/create', authenticate, async (req: Request, res: Response) => {
 });
 
 // Get user's card
-router.get('/my-card', authenticate, async (req: Request, res: Response) => {
+router.get('/my-card', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const userId = (req as any).user.id;
-    const userName = (req as any).user.name || 'Card Holder';
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const userName = req.user?.email || 'Card Holder';
 
     let card = cards.find(card => card.userId === userId);
 
     // Auto-create card if doesn't exist
     if (!card) {
       card = {
-        id: `card_${Date.now()}`,
+        id: randomUUID(),
         userId,
         cardNumber: generateCardNumber(),
         cardholderName: userName,
@@ -125,9 +129,10 @@ router.get('/my-card', authenticate, async (req: Request, res: Response) => {
 });
 
 // Update card balance
-router.post('/update-balance', authenticate, async (req: Request, res: Response) => {
+router.post('/update-balance', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const { amount, type } = req.body; // type: 'add' or 'subtract'
 
     const card = cards.find(card => card.userId === userId);
@@ -167,7 +172,7 @@ router.post('/update-balance', authenticate, async (req: Request, res: Response)
 });
 
 // Activate card (admin only)
-router.post('/activate/:cardId', authenticate, async (req: Request, res: Response) => {
+router.post('/activate/:cardId', authenticateAdminKey, async (req: Request, res: Response) => {
   try {
     const { cardId } = req.params;
 
@@ -197,7 +202,7 @@ router.post('/activate/:cardId', authenticate, async (req: Request, res: Respons
 });
 
 // Freeze card (admin only)
-router.post('/freeze/:cardId', authenticate, async (req: Request, res: Response) => {
+router.post('/freeze/:cardId', authenticateAdminKey, async (req: Request, res: Response) => {
   try {
     const { cardId } = req.params;
 
@@ -227,7 +232,7 @@ router.post('/freeze/:cardId', authenticate, async (req: Request, res: Response)
 });
 
 // Get all cards (admin only)
-router.get('/all', authenticate, async (req: Request, res: Response) => {
+router.get('/all', authenticateAdminKey, async (req: Request, res: Response) => {
   try {
     return res.json({
       success: true,
