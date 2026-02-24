@@ -1,4 +1,4 @@
-name: Deploy Advancia Pay Ledger
+name: CI / CD — Advancia Pay Ledger
 
 on:
   push:
@@ -6,118 +6,174 @@ on:
   pull_request:
     branches: [master, main]
 
+# Cancel in-progress runs on the same branch when a new push arrives
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  # ──────────────────────────────────────────────────────────────
+  # 1. Backend — type-check + tests
+  #    ESLint is not installed in devDependencies, so we use tsc
+  #    for static checking. Tests are fully mocked (no DB needed).
+  # ──────────────────────────────────────────────────────────────
   test-backend:
-    name: Test Backend
+    name: Backend — type-check & test
     runs-on: ubuntu-latest
-    
+
+    env:
+      NODE_ENV: test
+      # Required by validate-env.ts even in mocked tests
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci_db
+      JWT_SECRET: ci-jwt-secret-minimum-32-characters-long
+      JWT_REFRESH_SECRET: ci-refresh-secret-minimum-32-chars
+      STRIPE_SECRET_KEY: sk_test_placeholder
+      NOWPAYMENTS_API_KEY: placeholder
+      BACKEND_URL: http://localhost:4000
+      FRONTEND_URL: http://localhost:3000
+
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
+
+      - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
           cache-dependency-path: backend-clean/package-lock.json
-      
+
       - name: Install dependencies
-        working-directory: ./backend-clean
+        working-directory: backend-clean
         run: npm ci
-      
-      - name: Run linter
-        working-directory: ./backend-clean
-        run: npm run lint
-      
+
+      - name: Type-check (tsc --noEmit)
+        working-directory: backend-clean
+        run: npx tsc --noEmit
+
       - name: Run tests
-        working-directory: ./backend-clean
+        working-directory: backend-clean
         run: npm test
 
-  test-frontend:
-    name: Test Frontend
+  # ──────────────────────────────────────────────────────────────
+  # 2. Frontend — install + build
+  #    vercel.json uses --legacy-peer-deps; mirror that here.
+  # ──────────────────────────────────────────────────────────────
+  build-frontend:
+    name: Frontend — build
     runs-on: ubuntu-latest
-    
+
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:4000' }}
+      NEXT_PUBLIC_SOCKET_URL: ${{ secrets.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:4000' }}
+
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
+
+      - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
           cache-dependency-path: frontend-clean/package-lock.json
-      
-      - name: Install dependencies
-        working-directory: ./frontend-clean
-        run: npm ci
-      
-      - name: Build frontend
-        working-directory: ./frontend-clean
-        run: npm run build
-        env:
-          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:4000' }}
-          NEXT_PUBLIC_SOCKET_URL: ${{ secrets.NEXT_PUBLIC_SOCKET_URL || secrets.NEXT_PUBLIC_API_URL || 'http://localhost:4000' }}
 
+      - name: Install dependencies
+        working-directory: frontend-clean
+        run: npm ci --legacy-peer-deps
+
+      - name: Build
+        working-directory: frontend-clean
+        run: npm run build
+
+  # ──────────────────────────────────────────────────────────────
+  # 3. Deploy Backend → Hostinger VPS via SSH
+  #    Requires secrets: SERVER_HOST, SERVER_USER, SSH_PRIVATE_KEY
+  #    Optional secret: SERVER_PORT (default 22)
+  #    VPS layout: /var/www/advancia/backend  (git clone of this repo)
+  # ──────────────────────────────────────────────────────────────
   deploy-backend:
-    name: Deploy Backend
+    name: Deploy Backend → VPS
     needs: [test-backend]
     runs-on: ubuntu-latest
-    if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') && github.event_name == 'push'
-    
+    if: |
+      (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') &&
+      github.event_name == 'push'
+
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Deploy to Production
+
+      - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
           script: |
-            cd /var/www/advancia-backend
-            git pull origin master
-            npm install
+            set -e
+            cd /var/www/advancia/backend
+
+            # Pull latest code
+            git fetch origin
+            git reset --hard origin/master
+
+            # Install deps (production only)
+            npm ci --omit=dev
+
+            # Build TypeScript → dist/
+            npx tsc
+
+            # Run any pending DB migrations (no interaction)
             npx prisma migrate deploy
-            pm2 restart advancia-backend
 
+            # Reload with PM2 (zero-downtime), or start fresh if not running
+            pm2 reload advancia-backend --update-env 2>/dev/null \
+              || pm2 start dist/index.js --name advancia-backend \
+                   --env production \
+                   --max-memory-restart 500M \
+                   --instances 1 \
+                   --exp-backoff-restart-delay 100
+
+            pm2 save
+
+  # ──────────────────────────────────────────────────────────────
+  # 4. Deploy Frontend → Vercel (using official Vercel CLI)
+  #    Requires secrets: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID
+  # ──────────────────────────────────────────────────────────────
   deploy-frontend:
-    name: Deploy Frontend to Vercel
-    needs: [test-frontend]
+    name: Deploy Frontend → Vercel
+    needs: [build-frontend]
     runs-on: ubuntu-latest
-    if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') && github.event_name == 'push'
-    
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Deploy to Vercel
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          working-directory: ./frontend-clean
-          vercel-args: '--prod'
+    if: |
+      (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') &&
+      github.event_name == 'push'
 
-  deploy-email-worker:
-    name: Deploy Cloudflare Email Worker
-    runs-on: ubuntu-latest
-    if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') && github.event_name == 'push'
-    
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      NEXT_TELEMETRY_DISABLED: '1'
+
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
+
+      - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-      
-      - name: Install Wrangler
-        run: npm install -g wrangler
-      
-      - name: Deploy Worker
-        run: wrangler deploy cloudflare-email-worker.js
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          node-version: '20'
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Pull Vercel environment info
+        working-directory: frontend-clean
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build project artifact
+        working-directory: frontend-clean
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy to Vercel (production)
+        working-directory: frontend-clean
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
 
 
