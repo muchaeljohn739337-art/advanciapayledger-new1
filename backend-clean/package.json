@@ -31,7 +31,8 @@
     "env:check": "node -e \"console.log('NODE_ENV:', process.env.NODE_ENV)\"",
     "prepublishOnly": "npm run build",
     "philosophy:generate": "node scripts/generate-philosophy-docs.js",
-    "services:status": "node scripts/check-services-status.js"
+    "services:status": "node scripts/check-services-status.js",
+    "postinstall": "prisma generate"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

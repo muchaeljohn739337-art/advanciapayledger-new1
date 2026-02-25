@@ -46,6 +46,10 @@ jobs:
         working-directory: backend-clean
         run: npm ci
 
+      - name: Generate Prisma client
+        working-directory: backend-clean
+        run: npx prisma generate
+
       - name: Type-check (tsc --noEmit)
         working-directory: backend-clean
         run: npx tsc --noEmit
@@ -119,6 +123,9 @@ jobs:
 
             # Install deps (production only)
             npm ci --omit=dev
+
+            # Generate Prisma client (must run before tsc)
+            npx prisma generate
 
             # Build TypeScript → dist/
             npx tsc
