@@ -11,7 +11,7 @@
   "scripts": {
     "dev": "cross-env NODE_ENV=development ts-node-dev --respawn --transpile-only src/index.ts",
     "dev:prod": "cross-env NODE_ENV=production ts-node-dev --respawn --transpile-only src/index.ts",
-    "build": "tsc",
+    "build": "prisma generate && tsc",
     "start": "node dist/index.js",
     "start:dev": "cross-env NODE_ENV=development node dist/index.js",
     "start:prod": "cross-env NODE_ENV=production node dist/index.js",
@@ -32,7 +32,7 @@
     "prepublishOnly": "npm run build",
     "philosophy:generate": "node scripts/generate-philosophy-docs.js",
     "services:status": "node scripts/check-services-status.js",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate || true"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
