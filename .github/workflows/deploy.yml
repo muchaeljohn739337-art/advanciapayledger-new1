@@ -5,6 +5,28 @@ on:
     branches: [master, main]
   pull_request:
     branches: [master, main]
+  # Manual run options:
+  # - deploy_target: both | backend | frontend
+  # - deploy_environment: production | staging
+  workflow_dispatch:
+    inputs:
+      deploy_target:
+        description: Which app(s) to deploy
+        required: true
+        default: both
+        type: choice
+        options:
+          - both
+          - backend
+          - frontend
+      deploy_environment:
+        description: Deployment environment
+        required: true
+        default: production
+        type: choice
+        options:
+          - production
+          - staging
 
 # Cancel in-progress runs on the same branch when a new push arrives
 concurrency:
@@ -14,12 +36,17 @@ concurrency:
 jobs:
   # ──────────────────────────────────────────────────────────────
   # 1. Backend — type-check + tests
-  #    ESLint is not installed in devDependencies, so we use tsc
-  #    for static checking. Tests are fully mocked (no DB needed).
+  #    For manual runs, this job executes for both/backend targets.
+  #    Use tsc for static type-checking. Tests are fully mocked
+  #    (no DB needed).
   # ──────────────────────────────────────────────────────────────
   test-backend:
     name: Backend — type-check & test
     runs-on: ubuntu-latest
+    if: |
+      github.event_name != 'workflow_dispatch' ||
+      github.event.inputs.deploy_target == 'both' ||
+      github.event.inputs.deploy_target == 'backend'
 
     env:
       NODE_ENV: test
@@ -60,11 +87,16 @@ jobs:
 
   # ──────────────────────────────────────────────────────────────
   # 2. Frontend — install + build
+  #    For manual runs, this job executes for both/frontend targets.
   #    vercel.json uses --legacy-peer-deps; mirror that here.
   # ──────────────────────────────────────────────────────────────
   build-frontend:
     name: Frontend — build
     runs-on: ubuntu-latest
+    if: |
+      github.event_name != 'workflow_dispatch' ||
+      github.event.inputs.deploy_target == 'both' ||
+      github.event.inputs.deploy_target == 'frontend'
 
     env:
       NEXT_TELEMETRY_DISABLED: '1'
@@ -100,8 +132,13 @@ jobs:
     needs: [test-backend]
     runs-on: ubuntu-latest
     if: |
-      (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') &&
-      github.event_name == 'push'
+      (
+        github.ref == 'refs/heads/main' &&
+        github.event_name == 'push'
+      ) || (
+        github.event_name == 'workflow_dispatch' &&
+        (github.event.inputs.deploy_target == 'both' || github.event.inputs.deploy_target == 'backend')
+      )
 
     steps:
       - uses: actions/checkout@v4
@@ -117,26 +154,35 @@ jobs:
             set -e
             cd /var/www/advancia/backend
 
+            DEPLOY_ENV="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_environment || 'production' }}"
+            APP_NAME="advancia-backend"
+            if [ "$DEPLOY_ENV" = "staging" ]; then
+              APP_NAME="advancia-backend-staging"
+            fi
+
             # Pull latest code
             git fetch origin
-            git reset --hard origin/master
+            git reset --hard origin/${{ github.ref_name }}
 
-            # Install deps (production only)
-            npm ci --omit=dev
+            # Enter backend package (monorepo layout)
+            cd backend-clean
+
+            # Install deps (includes TypeScript compiler for build)
+            npm ci
 
             # Generate Prisma client (must run before tsc)
             npx prisma generate
 
             # Build TypeScript → dist/
-            npx tsc
+            npm run build
 
             # Run any pending DB migrations (no interaction)
             npx prisma migrate deploy
 
             # Reload with PM2 (zero-downtime), or start fresh if not running
-            pm2 reload advancia-backend --update-env 2>/dev/null \
-              || pm2 start dist/index.js --name advancia-backend \
-                   --env production \
+            pm2 reload "$APP_NAME" --update-env 2>/dev/null \
+              || pm2 start dist/index.js --name "$APP_NAME" \
+                   --env "$DEPLOY_ENV" \
                    --max-memory-restart 500M \
                    --instances 1 \
                    --exp-backoff-restart-delay 100
@@ -152,13 +198,20 @@ jobs:
     needs: [build-frontend]
     runs-on: ubuntu-latest
     if: |
-      (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') &&
-      github.event_name == 'push'
+      (
+        github.ref == 'refs/heads/main' &&
+        github.event_name == 'push'
+      ) || (
+        github.event_name == 'workflow_dispatch' &&
+        (github.event.inputs.deploy_target == 'both' || github.event.inputs.deploy_target == 'frontend')
+      )
 
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
       NEXT_TELEMETRY_DISABLED: '1'
+      VERCEL_DEPLOY_ENV: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_environment || 'production' }}
+      VERCEL_PULL_ENV: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_environment == 'staging' && 'preview' || 'production' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -173,14 +226,24 @@ jobs:
 
       - name: Pull Vercel environment info
         working-directory: frontend-clean
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel pull --yes --environment=${{ env.VERCEL_PULL_ENV }} --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Build project artifact
         working-directory: frontend-clean
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if [ "${{ env.VERCEL_DEPLOY_ENV }}" = "production" ]; then
+            vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+          else
+            vercel build --token=${{ secrets.VERCEL_TOKEN }}
+          fi
 
-      - name: Deploy to Vercel (production)
+      - name: Deploy to Vercel
         working-directory: frontend-clean
-        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if [ "${{ env.VERCEL_DEPLOY_ENV }}" = "production" ]; then
+            vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+          else
+            vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
+          fi
 
 
