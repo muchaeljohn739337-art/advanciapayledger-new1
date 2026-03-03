@@ -73,10 +73,6 @@ jobs:
         working-directory: backend-clean
         run: npm ci
 
-      - name: Generate Prisma client
-        working-directory: backend-clean
-        run: npx prisma generate
-
       - name: Type-check (tsc --noEmit)
         working-directory: backend-clean
         run: npx tsc --noEmit
@@ -143,7 +139,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check backend deploy secrets
+        id: backend-secrets
+        run: |
+          if [ -z "${{ secrets.SERVER_HOST }}" ] || [ -z "${{ secrets.SERVER_USER }}" ] || [ -z "${{ secrets.SSH_PRIVATE_KEY }}" ]; then
+            echo "Backend deploy secrets missing; skipping deployment steps."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Deploy via SSH
+        if: steps.backend-secrets.outputs.ready == 'true'
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -169,9 +176,6 @@ jobs:
 
             # Install deps (includes TypeScript compiler for build)
             npm ci
-
-            # Generate Prisma client (must run before tsc)
-            npx prisma generate
 
             # Build TypeScript → dist/
             npm run build
@@ -216,19 +220,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check frontend deploy secrets
+        id: frontend-secrets
+        run: |
+          if [ -z "${{ secrets.VERCEL_TOKEN }}" ] || [ -z "${{ secrets.VERCEL_ORG_ID }}" ] || [ -z "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
+            echo "Vercel deploy secrets missing; skipping deployment steps."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Setup Node.js 20
+        if: steps.frontend-secrets.outputs.ready == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
       - name: Install Vercel CLI
+        if: steps.frontend-secrets.outputs.ready == 'true'
         run: npm install -g vercel@latest
 
       - name: Pull Vercel environment info
+        if: steps.frontend-secrets.outputs.ready == 'true'
         working-directory: frontend-clean
         run: vercel pull --yes --environment=${{ env.VERCEL_PULL_ENV }} --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Build project artifact
+        if: steps.frontend-secrets.outputs.ready == 'true'
         working-directory: frontend-clean
         run: |
           if [ "${{ env.VERCEL_DEPLOY_ENV }}" = "production" ]; then
@@ -238,6 +256,7 @@ jobs:
           fi
 
       - name: Deploy to Vercel
+        if: steps.frontend-secrets.outputs.ready == 'true'
         working-directory: frontend-clean
         run: |
           if [ "${{ env.VERCEL_DEPLOY_ENV }}" = "production" ]; then
