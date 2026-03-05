@@ -3,8 +3,6 @@ name: CI / CD — Advancia Pay Ledger
 on:
   push:
     branches: [master, main]
-  pull_request:
-    branches: [master, main]
   # Manual run options:
   # - deploy_target: both | backend | frontend
   # - deploy_environment: production | staging
