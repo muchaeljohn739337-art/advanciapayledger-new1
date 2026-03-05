@@ -1,0 +1,1 @@
+export const mockPush = jest.fn();
