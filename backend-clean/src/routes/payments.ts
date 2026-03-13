@@ -333,11 +333,10 @@ router.post("/webhook", async (req: Request, res: Response) => {
               await prisma.notification.create({
                 data: {
                   userId,
-                  type: "transaction",
+                  type: "TRANSACTION",
                   title: "Payment Failed",
                   message: `Your payment could not be processed. ${failedPayment.last_payment_error?.message || "Please try again."}`,
                   read: false,
-                  metadata: { paymentIntentId: failedPayment.id },
                 },
               });
             }
@@ -444,15 +443,10 @@ router.post("/webhook", async (req: Request, res: Response) => {
             await prisma.notification.create({
               data: {
                 userId: failedSub.userId,
-                type: "billing",
+                type: "PAYMENT",
                 title: "Subscription Payment Failed",
                 message: "We were unable to charge your payment method for your subscription. Please update your payment details.",
                 read: false,
-                metadata: {
-                  invoiceId: failedInvoice.id,
-                  subscriptionId: failedInvoice.subscription,
-                  attemptCount: failedInvoice.attempt_count,
-                },
               },
             });
             // Mark subscription as past_due
@@ -630,17 +624,17 @@ router.post("/nowpayments/webhook", async (req: Request, res: Response) => {
           if (wallet) {
             await prisma.cryptoDeposit.upsert({
               where: { txHash: payment_id },
-              update: { status: "FAILED", metadata: event },
+              update: { status: "FAILED" },
               create: {
+                userId: wallet.userId,
                 walletId: wallet.id,
+                chain: pay_currency || price_currency || "UNKNOWN",
+                fromAddress: "external",
+                toAddress: pay_address || wallet.cryptoAddress || wallet.ethereumAddress,
                 amount: parseFloat(price_amount || "0"),
                 currency: price_currency || "USD",
-                payCurrency: pay_currency,
-                payAmount: parseFloat(pay_amount || "0"),
                 txHash: payment_id,
                 status: "FAILED",
-                orderId: order_id,
-                metadata: event,
               },
             });
           }
@@ -659,20 +653,18 @@ router.post("/nowpayments/webhook", async (req: Request, res: Response) => {
               update: {
                 status: "CONFIRMING",
                 confirmations: 1,
-                metadata: event,
               },
               create: {
+                userId: confirmingWallet.userId,
                 walletId: confirmingWallet.id,
+                chain: pay_currency || price_currency || "UNKNOWN",
+                fromAddress: "external",
+                toAddress: pay_address || confirmingWallet.cryptoAddress || confirmingWallet.ethereumAddress,
                 amount: parseFloat(price_amount || "0"),
                 currency: price_currency || "USD",
-                payCurrency: pay_currency,
-                payAmount: parseFloat(pay_amount || "0"),
                 txHash: payment_id,
                 status: "CONFIRMING",
                 confirmations: 1,
-                orderId: order_id,
-                payAddress: pay_address,
-                metadata: event,
               },
             });
           }

@@ -1,4 +1,6 @@
-# 🎯 DEPLOYMENT READY - EXECUTE NOW
+# Deployment Ready
+
+This repo is not the canonical production source. Use it as a migration/reference copy inside this workspace. The canonical production layout is documented in `..\WORKSPACE_CONTROL_TOWER.md`.
 
 ## ✅ What's Done
 
@@ -25,9 +27,9 @@
 
 ---
 
-## 🚀 IMMEDIATE NEXT STEPS (Choose One)
+## Immediate Next Steps
 
-### **Option 1: Automated Deploy to Hostinger VPS (FASTEST)**
+### Recommended: Hostinger VPS As The Only Production Origin
 
 ```bash
 # Set your Hostinger VPS IP
@@ -48,7 +50,7 @@ chmod +x /tmp/quick-deploy.sh
 
 ---
 
-### **Option 2: Manual Deploy (CONTROLLED)**
+### Alternative: Manual Hostinger Deploy
 
 #### A. Deploy Backend
 
@@ -88,7 +90,7 @@ systemctl restart nginx
 
 ---
 
-### **Option 3: Docker Deploy**
+### Alternative: Docker Deploy
 
 ```bash
 # On your Hostinger VPS
@@ -99,7 +101,7 @@ docker-compose up -d
 
 ---
 
-## 📋 Core Active Routes
+## Core Active Routes
 
 | Route | Purpose |
 | ------- | --------- |
@@ -116,7 +118,7 @@ docker-compose up -d
 
 ---
 
-## ✨ What You'll Have After Deployment
+## What You'll Have After Deployment
 
 - ✅ Frontend running at <https://advanciapayledger.com>
 - ✅ Backend API running at <https://api.advanciapayledger.com>
@@ -127,8 +129,9 @@ docker-compose up -d
 
 ---
 
-## 📞 Quick Reference
+## Quick Reference
 
+- **Canonical source**: `modullar-advancia` for PayLedger, `advancia-healthcare1` for the separate healthcare app
 - **VPS Provider**: Hostinger
 - **Frontend Domain**: advanciapayledger.com
 - **API Domain**: api.advanciapayledger.com
@@ -138,4 +141,6 @@ docker-compose up -d
 
 ---
 
-## Status: 🟢 READY FOR IMMEDIATE DEPLOYMENT
+## Status
+
+Use this repo only if you are intentionally deploying this variant. Otherwise deploy from the canonical repos above.

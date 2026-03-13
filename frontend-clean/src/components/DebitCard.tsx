@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import {
@@ -53,7 +53,7 @@ export default function DebitCard() {
     {
       id: "1",
       cardNumber: "4532 **** **** 8790",
-      cardholderName: displayName,
+      cardholderName: "ADVANCIA USER",
       expiryDate: "12/28",
       cvv: "***",
       balance: 5250.0,
@@ -65,20 +65,12 @@ export default function DebitCard() {
     },
   ]);
 
-  const [selectedCard, setSelectedCard] = useState(cards[0]);
   const [showCVV, setShowCVV] = useState(false);
   const [showCardNumber, setShowCardNumber] = useState(false);
-
-  // Update card holder name when session changes
-  useEffect(() => {
-    setCards((prevCards) =>
-      prevCards.map((card) => ({
-        ...card,
-        cardholderName: displayName,
-      })),
-    );
-    setSelectedCard((prev) => ({ ...prev, cardholderName: displayName }));
-  }, [displayName]);
+  const selectedCard = {
+    ...cards[0],
+    cardholderName: displayName,
+  };
 
   const recentTransactions = [
     {
@@ -116,8 +108,8 @@ export default function DebitCard() {
   ];
 
   const toggleCardStatus = (cardId: string) => {
-    setCards(
-      cards.map((card) =>
+    setCards((prevCards) =>
+      prevCards.map((card) =>
         card.id === cardId
           ? { ...card, status: card.status === "active" ? "frozen" : "active" }
           : card,

@@ -579,7 +579,10 @@ export class CurrencyService {
         });
       }
 
-      return currency;
+      return {
+        ...currency,
+        lastUpdated: currency.updatedAt,
+      };
     } catch (error) {
       logger.error("Error updating currency:", error);
       throw error;
@@ -593,7 +596,7 @@ export class CurrencyService {
       const newCurrency = await prisma.currency.create({
         data: {
           ...currency,
-          lastUpdated: new Date(),
+          updatedAt: new Date(),
         },
       });
 
@@ -604,7 +607,10 @@ export class CurrencyService {
       });
       this.exchangeRates.set(`USD-${currency.code}`, currency.exchangeRate);
 
-      return newCurrency;
+      return {
+        ...newCurrency,
+        lastUpdated: newCurrency.updatedAt,
+      };
     } catch (error) {
       logger.error("Error adding currency:", error);
       throw error;
@@ -706,15 +712,18 @@ export class CurrencyService {
         where: {
           fromCurrency,
           toCurrency,
-          timestamp: {
+          createdAt: {
             gte: startDate,
           },
         },
-        orderBy: { timestamp: "desc" },
+        orderBy: { createdAt: "desc" },
         take: 100,
       });
 
-      return rates;
+      return rates.map((rate) => ({
+        ...rate,
+        timestamp: rate.updatedAt,
+      }));
     } catch (error) {
       logger.error("Error getting exchange rate history:", error);
       return [];

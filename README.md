@@ -1,5 +1,7 @@
 # 💰 Advancia PayLedger
 
+> Canonical production repo: [pdtribe181-prog/modullar-advancia](https://github.com/pdtribe181-prog/modullar-advancia). This repository is a variant/reference build and should not be used as the live deploy source for `advanciapayledger.com` or `advancia-healthcare.com`.
+
 Global Financial Transformation Platform
 
 ## 🚀 Quick Start

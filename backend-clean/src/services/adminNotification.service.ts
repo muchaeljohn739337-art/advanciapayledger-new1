@@ -27,7 +27,7 @@ class AdminNotificationService {
       const admins = await prisma.user.findMany({
         where: {
           role: {
-            in: ["ADMIN", "SUPER_ADMIN"],
+            in: ["ADMIN"],
           },
           status: "ACTIVE",
         },
@@ -204,7 +204,7 @@ class AdminNotificationService {
       const admins = await prisma.user.findMany({
         where: {
           role: {
-            in: ["ADMIN", "SUPER_ADMIN"],
+            in: ["ADMIN"],
           },
           status: "ACTIVE",
         },

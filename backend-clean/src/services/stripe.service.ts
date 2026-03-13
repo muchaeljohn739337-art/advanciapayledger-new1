@@ -275,12 +275,16 @@ export class StripeService {
             });
             if (card) {
               // Upsert: authorization may already exist with same stripeId suffix
+              const authorizationId =
+                typeof tx.authorization === 'string'
+                  ? tx.authorization
+                  : tx.authorization?.id;
               const existing = await prismaClient.cardTransaction.findFirst({
-                where: { stripeId: tx.authorization ?? tx.id },
+                where: { stripeId: authorizationId ?? tx.id },
               });
               if (existing) {
                 await prismaClient.cardTransaction.updateMany({
-                  where: { stripeId: tx.authorization ?? tx.id },
+                  where: { stripeId: authorizationId ?? tx.id },
                   data: { status: 'COMPLETED', stripeId: tx.id },
                 });
               } else {

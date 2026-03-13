@@ -7,26 +7,25 @@
 
 import { useAIInsights } from "@/lib/ai-brain/AIInsightsEngine";
 import { AIInsight } from "@/lib/ai-brain/ai-core.types";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo } from "react";
 
 export default function AIInsightsWidget() {
   const { insights, generateInsights, loading } = useAIInsights();
-  const [displayedInsights, setDisplayedInsights] = useState<AIInsight[]>([]);
 
   useEffect(() => {
     // Generate dashboard insights on mount
     generateInsights("dashboard");
   }, [generateInsights]);
 
-  useEffect(() => {
-    // Filter for high-impact insights
-    const filtered = insights
-      .filter(
-        (insight) => insight.impact === "high" || insight.impact === "medium",
-      )
-      .slice(0, 3);
-    setDisplayedInsights(filtered);
-  }, [insights]);
+  const displayedInsights = useMemo<AIInsight[]>(
+    () =>
+      insights
+        .filter(
+          (insight) => insight.impact === "high" || insight.impact === "medium",
+        )
+        .slice(0, 3),
+    [insights],
+  );
 
   if (!loading && displayedInsights.length === 0) {
     return null;

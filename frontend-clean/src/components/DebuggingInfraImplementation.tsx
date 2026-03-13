@@ -12,7 +12,7 @@ import {
 
 export default function DebuggingInfraImplementation() {
   const [completedItems, setCompletedItems] = useState(new Set());
-  const [selectedComponent, setSelectedComponent] = useState(null);
+  const [selectedComponent, setSelectedComponent] = useState<string | null>(null);
 
   const components = {
     phase1: {

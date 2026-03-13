@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Calculator, TrendingUp, DollarSign, Calendar } from 'lucide-react';
 
@@ -8,25 +8,18 @@ export default function EMICalculator() {
   const [loanAmount, setLoanAmount] = useState(100000);
   const [interestRate, setInterestRate] = useState(8.5);
   const [tenure, setTenure] = useState(12);
-  const [emi, setEmi] = useState(0);
-  const [totalInterest, setTotalInterest] = useState(0);
-  const [totalAmount, setTotalAmount] = useState(0);
-
-  useEffect(() => {
-    calculateEMI();
-  }, [loanAmount, interestRate, tenure]);
-
-  const calculateEMI = () => {
+  const { emi, totalInterest, totalAmount } = useMemo(() => {
     const principal = loanAmount;
     const ratePerMonth = interestRate / 12 / 100;
     const numberOfMonths = tenure;
 
     if (ratePerMonth === 0) {
       const monthlyEMI = principal / numberOfMonths;
-      setEmi(monthlyEMI);
-      setTotalAmount(principal);
-      setTotalInterest(0);
-      return;
+      return {
+        emi: monthlyEMI,
+        totalAmount: principal,
+        totalInterest: 0,
+      };
     }
 
     const emiValue =
@@ -36,10 +29,12 @@ export default function EMICalculator() {
     const totalAmountValue = emiValue * numberOfMonths;
     const totalInterestValue = totalAmountValue - principal;
 
-    setEmi(emiValue);
-    setTotalAmount(totalAmountValue);
-    setTotalInterest(totalInterestValue);
-  };
+    return {
+      emi: emiValue,
+      totalAmount: totalAmountValue,
+      totalInterest: totalInterestValue,
+    };
+  }, [interestRate, loanAmount, tenure]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {

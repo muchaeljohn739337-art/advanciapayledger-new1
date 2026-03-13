@@ -188,15 +188,6 @@ router.get("/admin/activity", authenticate, async (req: AuthRequest, res) => {
       },
       take: limit,
       skip: offset,
-      include: {
-        user: {
-          select: {
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
     });
 
     const totalCount = await prisma.auditLog.count();
@@ -284,14 +275,6 @@ router.get("/medbeds-bookings", authenticate, async (req: AuthRequest, res) => {
         },
         orderBy: {
           createdAt: "desc",
-        },
-        include: {
-          chamber: {
-            select: {
-              name: true,
-              description: true,
-            },
-          },
         },
       });
 

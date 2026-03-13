@@ -1,11 +1,11 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactElement, type ReactNode } from "react";
 
 interface RequireRoleProps {
   roles?: string[];
-  children: React.ReactNode;
-  fallback?: React.ReactNode;
+  children: ReactNode;
+  fallback?: ReactNode;
 }
 
 /**
@@ -16,7 +16,7 @@ export default function RequireRole({
   roles = ["USER"],
   children,
   fallback = null,
-}: RequireRoleProps): JSX.Element | null {
+}: RequireRoleProps): ReactElement | null {
   const [authorized, setAuthorized] = useState(false);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -67,12 +67,14 @@ export default function RequireRole({
   }, [roles, router]);
 
   if (loading) {
+    if (fallback) {
+      return <>{fallback}</>;
+    }
+
     return (
-      (fallback as JSX.Element) ?? (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
-        </div>
-      )
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+      </div>
     );
   }
 
@@ -80,5 +82,5 @@ export default function RequireRole({
     return null;
   }
 
-  return (<>{children}</>) as JSX.Element;
+  return <>{children}</>;
 }

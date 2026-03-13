@@ -49,8 +49,8 @@ export default function KanbanBoard({
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
-    const task = board.tasksByColumn
-      ?.flatMap((col) => col.tasks || [])
+    const task = Object.values(board.tasksByColumn ?? {})
+      .flatMap((tasks) => tasks || [])
       .find((t) => t.id === active.id);
     setActiveTask(task || null);
   };
@@ -63,9 +63,10 @@ export default function KanbanBoard({
 
     const taskId = active.id as string;
     const targetColumnId = over.id as string;
+    const targetTasks = board.tasksByColumn?.[targetColumnId] ?? [];
 
     try {
-      await moveTask(taskId, targetColumnId);
+      await moveTask(taskId, targetColumnId, targetTasks.length);
       onUpdate();
     } catch (error) {
       console.error("Failed to move task:", error);
@@ -94,8 +95,11 @@ export default function KanbanBoard({
       onDragEnd={handleDragEnd}
     >
       <div className="flex gap-4 overflow-x-auto pb-4">
-        {board.tasksByColumn?.map((column) => (
-          <div key={column.id} className="flex-shrink-0 w-80">
+        {board.columns.map((column) => {
+          const tasks = board.tasksByColumn?.[column.id] ?? [];
+
+          return (
+            <div key={column.id} className="flex-shrink-0 w-80">
             <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -107,7 +111,7 @@ export default function KanbanBoard({
                   )}
                   <h3 className="text-white font-semibold">{column.name}</h3>
                   <span className="text-gray-400 text-sm">
-                    ({column.tasks?.length || 0})
+                    ({tasks.length})
                   </span>
                   {column.limit && (
                     <span className="text-xs text-gray-500">
@@ -127,18 +131,19 @@ export default function KanbanBoard({
               </div>
 
               <SortableContext
-                items={column.tasks?.map((t) => t.id) || []}
+                items={tasks.map((t) => t.id)}
                 strategy={verticalListSortingStrategy}
               >
                 <div className="space-y-3 min-h-[200px]">
-                  {column.tasks?.map((task) => (
+                  {tasks.map((task) => (
                     <SortableTaskCard key={task.id} task={task} />
                   ))}
                 </div>
               </SortableContext>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       <DragOverlay>

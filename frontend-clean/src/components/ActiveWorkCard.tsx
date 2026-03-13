@@ -1,17 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export default function ActiveWorkCard() {
   const [imageError, setImageError] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState<string>("");
-
-  useEffect(() => {
-    // Get last update time
-    const now = new Date().toLocaleString();
-    setLastUpdate(now);
-  }, []);
+  const [lastUpdate] = useState(() => new Date().toLocaleString());
 
   return (
     <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 shadow-lg hover:shadow-xl transition-shadow">

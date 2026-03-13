@@ -32,6 +32,17 @@ export function AIRevenueForecast() {
     );
   }
 
+  const scenarios = revenueForecast.scenarios ?? {
+    optimistic: 0,
+    realistic: 0,
+    pessimistic: 0,
+  };
+  const factors = revenueForecast.factors ?? {
+    seasonality: 0,
+    trend: 0,
+    external: 0,
+  };
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
       <div className="flex items-center justify-between mb-6">
@@ -78,7 +89,7 @@ export function AIRevenueForecast() {
             Optimistic
           </p>
           <p className="text-2xl font-bold text-green-900 dark:text-green-100">
-            ${revenueForecast.scenarios.optimistic.toLocaleString()}
+            ${scenarios.optimistic.toLocaleString()}
           </p>
         </div>
         <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
@@ -86,7 +97,7 @@ export function AIRevenueForecast() {
             Realistic
           </p>
           <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-            ${revenueForecast.scenarios.realistic.toLocaleString()}
+            ${scenarios.realistic.toLocaleString()}
           </p>
         </div>
         <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200">
@@ -94,7 +105,7 @@ export function AIRevenueForecast() {
             Pessimistic
           </p>
           <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">
-            ${revenueForecast.scenarios.pessimistic.toLocaleString()}
+            ${scenarios.pessimistic.toLocaleString()}
           </p>
         </div>
       </div>
@@ -108,20 +119,19 @@ export function AIRevenueForecast() {
           <div className="flex items-center gap-2 text-sm">
             <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
             <span className="text-gray-600 dark:text-gray-400">
-              Seasonality:{" "}
-              {(revenueForecast.factors.seasonality * 100).toFixed(0)}%
+              Seasonality: {(factors.seasonality * 100).toFixed(0)}%
             </span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <div className="w-2 h-2 bg-green-500 rounded-full"></div>
             <span className="text-gray-600 dark:text-gray-400">
-              Trend: {(revenueForecast.factors.trend * 100).toFixed(0)}%
+              Trend: {(factors.trend * 100).toFixed(0)}%
             </span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
             <span className="text-gray-600 dark:text-gray-400">
-              External: {(revenueForecast.factors.external * 100).toFixed(0)}%
+              External: {(factors.external * 100).toFixed(0)}%
             </span>
           </div>
         </div>

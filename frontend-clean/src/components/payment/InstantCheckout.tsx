@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, type ReactElement } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiCreditCard, FiDollarSign, FiUser, FiMail, FiLock, FiCheck, FiArrowLeft } from 'react-icons/fi';
 import { SiBitcoin, SiEthereum } from 'react-icons/si';
@@ -19,7 +19,7 @@ interface PaymentPlan {
 interface PaymentMethod {
   type: 'stripe' | 'crypto' | 'now_payments';
   currency?: string;
-  icon: JSX.Element;
+  icon: ReactElement;
   name: string;
   description: string;
 }
@@ -63,7 +63,7 @@ export default function InstantCheckout({ planId, onSuccess, onCancel, isOpen }:
   const [plans, setPlans] = useState<PaymentPlan[]>([]);
   const [error, setError] = useState('');
   
-  const { isConnected, lastMessage } = useLiveData();
+  const { connected: isConnected } = useLiveData();
 
   // Fetch payment plans
   useEffect(() => {

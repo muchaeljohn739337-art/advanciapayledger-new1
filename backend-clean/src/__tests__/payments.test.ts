@@ -396,7 +396,7 @@ describe("POST /api/payments/webhook", () => {
       expect(mockNotificationCreate).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
-            type: "billing",
+            type: "PAYMENT",
             title: "Subscription Payment Failed",
           }),
         })

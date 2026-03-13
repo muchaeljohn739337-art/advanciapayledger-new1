@@ -25,7 +25,7 @@ import { useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 type SessionUser = {
   id?: string;
@@ -58,24 +58,15 @@ export default function SidebarLayout({
     sessionUser?.email === "admin@advancia.com" ||
     sessionUser?.email?.includes("admin");
 
-  const displayName = useMemo(() => {
-    if (sessionUser?.name && sessionUser.name.trim().length > 0) {
-      return sessionUser.name;
-    }
-    if (sessionUser?.email) {
-      return sessionUser.email.split("@")[0];
-    }
-    return "Guest";
-  }, [sessionUser?.name, sessionUser?.email]);
+  const displayName =
+    sessionUser?.name && sessionUser.name.trim().length > 0
+      ? sessionUser.name
+      : sessionUser?.email?.split("@")[0] || "Guest";
 
-  const initials = useMemo(() => {
-    const parts = displayName.split(/\s+/).filter(Boolean);
-    if (!parts.length) return "";
-    const primary = parts[0]?.[0] ?? "";
-    const secondary =
-      parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? "") : "";
-    return `${primary}${secondary}`.toUpperCase();
-  }, [displayName]);
+  const nameParts = displayName.split(/\s+/).filter(Boolean);
+  const initials = `${nameParts[0]?.[0] ?? ""}${
+    nameParts.length > 1 ? (nameParts[nameParts.length - 1]?.[0] ?? "") : ""
+  }`.toUpperCase();
 
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: Home },

@@ -1,12 +1,12 @@
-# 🌐 CLOUDFLARE DNS SETUP - READY TO GO
+# Cloudflare DNS Setup
 
-**Status:** Ready for DNS configuration  
-**Domain:** advanciapayledger.com  
-**Time:** 10 minutes
+Recommended topology: one Hostinger VPS as the production origin, Cloudflare in front, and no split production between Render, Railway, and Hostinger.
+
+Domain: `advanciapayledger.com`
 
 ---
 
-## ⚡ QUICK START - COPY & PASTE
+## Quick Start
 
 ### **Step 1: Log In**
 Go to: https://dash.cloudflare.com/  
@@ -19,65 +19,60 @@ Click: **DNS** (left sidebar)
 
 ---
 
-### **Step 3: Add These 3 Records**
+### Step 3: Add These 3 Records
 
 | # | Type | Name | Content | TTL | Proxy |
 |---|------|------|---------|-----|-------|
-| 1 | A | @ | `<VERCEL_IP>` | 3600 | Proxied |
-| 2 | CNAME | www | cname.vercel-dns.com | 3600 | Proxied |
-| 3 | A | api | 147.182.193.11 | 3600 | Proxied |
+| 1 | A | @ | `<HOSTINGER_VPS_IP>` | 3600 | Proxied |
+| 2 | CNAME | www | `@` | 3600 | Proxied |
+| 3 | A | api | `<HOSTINGER_VPS_IP>` | 3600 | DNS only or Proxied |
 
 ---
 
 ## 📋 DETAILED STEPS
 
-### **Record #1: Root Domain (A Record)**
+### Record #1: Root Domain
 
 **What to do:**
 1. Click "**+ Add Record**"
 2. Set Type: **A**
 3. Set Name: **@** (or leave blank - means root)
-4. Set IPv4 address: **<VERCEL_IP>**
+4. Set IPv4 address: **<HOSTINGER_VPS_IP>**
 5. Set TTL: **3600** (or Auto)
 6. Proxy status: **Proxied** ☁️ (orange cloud)
 7. Click "**Save**"
 
-**Where to get Vercel IP:**
-- Go to: https://vercel.com/dashboard
-- Select: advancia-payledger project
-- Click: Settings → Domains
-- Look for: "Configure Domain" section
-- Copy: The IP shown (looks like 76.76.xxx.xxx)
+Use the public IPv4 address of your Hostinger VPS.
 
 ---
 
-### **Record #2: WWW Subdomain (CNAME Record)**
+### Record #2: WWW Subdomain
 
 **What to do:**
 1. Click "**+ Add Record**"
 2. Set Type: **CNAME**
 3. Set Name: **www**
-4. Set Target: **cname.vercel-dns.com**
+4. Set Target: **advanciapayledger.com**
 5. Set TTL: **3600** (or Auto)
 6. Proxy status: **Proxied** ☁️ (orange cloud)
 7. Click "**Save**"
 
 ---
 
-### **Record #3: API Subdomain (A Record)**
+### Record #3: API Subdomain
 
 **What to do:**
 1. Click "**+ Add Record**"
 2. Set Type: **A**
 3. Set Name: **api**
-4. Set IPv4 address: **147.182.193.11**
+4. Set IPv4 address: **<HOSTINGER_VPS_IP>**
 5. Set TTL: **3600** (or Auto)
 6. Proxy status: **Proxied** ☁️ (orange cloud)
 7. Click "**Save**"
 
 ---
 
-## ✅ VERIFY IN CLOUDFLARE
+## Verify In Cloudflare
 
 After adding all 3 records, your DNS tab should show:
 
@@ -85,15 +80,15 @@ After adding all 3 records, your DNS tab should show:
 ┌──────┬──────────────────────┬──────────┬─────────┐
 │ Type │ Name                 │ Content  │ Status  │
 ├──────┼──────────────────────┼──────────┼─────────┤
-│ A    │ advanciapayledger... │ 76.76... │ ✓ DNS   │
-│ CNAME│ www.advanciapaylg... │ cname... │ ✓ DNS   │
-│ A    │ api.advanciapaylg... │ 157...   │ ✓ DNS   │
+│ A    │ advanciapayledger... │ VPS IP   │ ✓ DNS   │
+│ CNAME│ www.advanciapaylg... │ @        │ ✓ DNS   │
+│ A    │ api.advanciapaylg... │ VPS IP   │ ✓ DNS   │
 └──────┴──────────────────────┴──────────┴─────────┘
 ```
 
 ---
 
-## ⏱️ WAIT FOR PROPAGATION
+## Wait For Propagation
 
 **Time to propagate:**
 - Fast: 5-15 minutes (shows up on some nameservers)
@@ -107,7 +102,7 @@ After adding all 3 records, your DNS tab should show:
 
 ---
 
-## 🔍 TEST DNS RESOLUTION
+## Test DNS Resolution
 
 **Test immediately (may not resolve yet):**
 ```powershell

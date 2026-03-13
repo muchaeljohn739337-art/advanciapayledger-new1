@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { io } from "socket.io-client";
 
 interface Notification {
@@ -15,6 +15,26 @@ interface Notification {
 export default function RealTimeNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+
+  const addNotification = useCallback(
+    (notification: Omit<Notification, "id" | "read">) => {
+      const newNotification: Notification = {
+        ...notification,
+        id: Date.now().toString(),
+        read: false,
+      };
+
+      setNotifications((prev) => [newNotification, ...prev].slice(0, 10));
+
+      if (globalThis.Notification?.permission === "granted") {
+        new globalThis.Notification(notification.title, {
+          body: notification.message,
+          icon: "/logo.png",
+        });
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -74,25 +94,7 @@ export default function RealTimeNotifications() {
     return () => {
       socketInstance.disconnect();
     };
-  }, []);
-
-  const addNotification = (notification: Omit<Notification, "id" | "read">) => {
-    const newNotification: Notification = {
-      ...notification,
-      id: Date.now().toString(),
-      read: false,
-    };
-
-    setNotifications((prev) => [newNotification, ...prev].slice(0, 10)); // Keep last 10
-
-    // Show browser notification if permitted
-    if (Notification.permission === "granted") {
-      new Notification(notification.title, {
-        body: notification.message,
-        icon: "/logo.png",
-      });
-    }
-  };
+  }, [addNotification]);
 
   const markAsRead = (id: string) => {
     setNotifications((prev) =>

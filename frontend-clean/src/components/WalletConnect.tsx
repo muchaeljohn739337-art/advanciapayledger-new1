@@ -1,6 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
 
+type EthereumProvider = {
+  request: (args: { method: string }) => Promise<string[]>;
+};
+
 interface WalletConnectProps {
   onConnected: (address: string, provider: string) => void;
   onDisconnected: () => void;
@@ -13,8 +17,9 @@ export default function WalletConnect({ onConnected, onDisconnected }: WalletCon
   const connectWallet = async () => {
     try {
       setIsConnecting(true);
-      if (typeof window.ethereum !== 'undefined') {
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const ethereum = (window as Window & { ethereum?: EthereumProvider }).ethereum;
+      if (typeof ethereum !== 'undefined') {
+        const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
         const walletAddress = accounts[0];
         setAddress(walletAddress);
         onConnected(walletAddress, 'MetaMask');

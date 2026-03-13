@@ -283,12 +283,12 @@ export const useNotifications = (userId?: string) => {
             keys: {
               p256dh: btoa(
                 String.fromCharCode(
-                  ...new Uint8Array(subscription.getKey("p256dh")!),
+                  ...Array.from(new Uint8Array(subscription.getKey("p256dh")!)),
                 ),
               ),
               auth: btoa(
                 String.fromCharCode(
-                  ...new Uint8Array(subscription.getKey("auth")!),
+                  ...Array.from(new Uint8Array(subscription.getKey("auth")!)),
                 ),
               ),
             },

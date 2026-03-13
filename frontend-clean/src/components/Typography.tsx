@@ -1,4 +1,4 @@
-import React from "react";
+import type { ElementType, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 interface TypographyProps {
@@ -17,11 +17,11 @@ interface TypographyProps {
   leading?: "tight" | "normal" | "relaxed";
   family?: "sans" | "mono" | "display";
   className?: string;
-  children: React.ReactNode;
-  as?: keyof JSX.IntrinsicElements;
+  children: ReactNode;
+  as?: ElementType;
 }
 
-export const Typography: React.FC<TypographyProps> = ({
+export function Typography({
   variant,
   marketingVariant,
   weight = "normal",
@@ -30,7 +30,7 @@ export const Typography: React.FC<TypographyProps> = ({
   className,
   children,
   as: Component = "span",
-}) => {
+}: TypographyProps) {
   const getVariantClasses = () => {
     if (marketingVariant) {
       return `marketing-${marketingVariant}`;
@@ -50,15 +50,22 @@ export const Typography: React.FC<TypographyProps> = ({
   );
 
   return <Component className={classes}>{children}</Component>;
-};
+}
 
 // Specialized typography components
-export const Heading: React.FC<{
+type HeadingProps = {
   level: 1 | 2 | 3 | 4 | 5 | 6;
   marketing?: boolean;
   className?: string;
-  children: React.ReactNode;
-}> = ({ level, marketing = false, className, children }) => {
+  children: ReactNode;
+};
+
+export function Heading({
+  level,
+  marketing = false,
+  className,
+  children,
+}: HeadingProps) {
   const getHeadingClasses = () => {
     if (marketing) {
       switch (level) {
@@ -97,18 +104,25 @@ export const Heading: React.FC<{
     }
   };
 
-  const Component = `h${level}` as keyof JSX.IntrinsicElements;
+  const Component = `h${level}` as ElementType;
   const classes = cn(getHeadingClasses(), className);
 
   return <Component className={classes}>{children}</Component>;
-};
+}
 
-export const Body: React.FC<{
+type BodyProps = {
   size?: "sm" | "base" | "lg";
   marketing?: boolean;
   className?: string;
-  children: React.ReactNode;
-}> = ({ size = "base", marketing = false, className, children }) => {
+  children: ReactNode;
+};
+
+export function Body({
+  size = "base",
+  marketing = false,
+  className,
+  children,
+}: BodyProps) {
   const getBodyClasses = () => {
     if (marketing) {
       switch (size) {
@@ -134,13 +148,19 @@ export const Body: React.FC<{
   const classes = cn(getBodyClasses(), className);
 
   return <p className={classes}>{children}</p>;
-};
+}
 
-export const Caption: React.FC<{
+type CaptionProps = {
   marketing?: boolean;
   className?: string;
-  children: React.ReactNode;
-}> = ({ marketing = false, className, children }) => {
+  children: ReactNode;
+};
+
+export function Caption({
+  marketing = false,
+  className,
+  children,
+}: CaptionProps) {
   const classes = cn(
     marketing ? "marketing-xs" : "text-xs",
     "leading-normal",
@@ -148,13 +168,19 @@ export const Caption: React.FC<{
   );
 
   return <span className={classes}>{children}</span>;
-};
+}
 
-export const Label: React.FC<{
+type LabelProps = {
   marketing?: boolean;
   className?: string;
-  children: React.ReactNode;
-}> = ({ marketing = false, className, children }) => {
+  children: ReactNode;
+};
+
+export function Label({
+  marketing = false,
+  className,
+  children,
+}: LabelProps) {
   const classes = cn(
     marketing ? "marketing-sm" : "text-sm",
     "font-medium",
@@ -163,89 +189,129 @@ export const Label: React.FC<{
   );
 
   return <span className={classes}>{children}</span>;
-};
+}
 
 // Utility component for readable content
-export const ReadableContent: React.FC<{
+type ReadableContentProps = {
   maxWidth?: "narrow" | "readable" | "wide";
   className?: string;
-  children: React.ReactNode;
-}> = ({ maxWidth = "readable", className, children }) => {
+  children: ReactNode;
+};
+
+export function ReadableContent({
+  maxWidth = "readable",
+  className,
+  children,
+}: ReadableContentProps) {
   const classes = cn(`text-${maxWidth}`, "leading-relaxed", className);
 
   return <div className={classes}>{children}</div>;
-};
+}
 
 // Marketing-specific components
-export const MarketingHeading: React.FC<{
+type MarketingHeadingProps = {
   level: 1 | 2 | 3 | 4 | 5 | 6;
   className?: string;
-  children: React.ReactNode;
-}> = ({ level, className, children }) => {
+  children: ReactNode;
+};
+
+export function MarketingHeading({
+  level,
+  className,
+  children,
+}: MarketingHeadingProps) {
   return (
     <Heading level={level} marketing className={className}>
       {children}
     </Heading>
   );
-};
+}
 
-export const MarketingBody: React.FC<{
+type MarketingBodyProps = {
   size?: "sm" | "base" | "lg";
   className?: string;
-  children: React.ReactNode;
-}> = ({ size = "base", className, children }) => {
+  children: ReactNode;
+};
+
+export function MarketingBody({
+  size = "base",
+  className,
+  children,
+}: MarketingBodyProps) {
   return (
     <Body size={size} marketing className={className}>
       {children}
     </Body>
   );
+}
+
+type MarketingCaptionProps = {
+  className?: string;
+  children: ReactNode;
 };
 
-export const MarketingCaption: React.FC<{
-  className?: string;
-  children: React.ReactNode;
-}> = ({ className, children }) => {
+export function MarketingCaption({
+  className,
+  children,
+}: MarketingCaptionProps) {
   return (
     <Caption marketing className={className}>
       {children}
     </Caption>
   );
-};
+}
 
 // Platform-specific components
-export const PlatformHeading: React.FC<{
+type PlatformHeadingProps = {
   level: 1 | 2 | 3 | 4 | 5 | 6;
   className?: string;
-  children: React.ReactNode;
-}> = ({ level, className, children }) => {
+  children: ReactNode;
+};
+
+export function PlatformHeading({
+  level,
+  className,
+  children,
+}: PlatformHeadingProps) {
   return (
     <Heading level={level} marketing={false} className={className}>
       {children}
     </Heading>
   );
-};
+}
 
-export const PlatformBody: React.FC<{
+type PlatformBodyProps = {
   size?: "sm" | "base" | "lg";
   className?: string;
-  children: React.ReactNode;
-}> = ({ size = "base", className, children }) => {
+  children: ReactNode;
+};
+
+export function PlatformBody({
+  size = "base",
+  className,
+  children,
+}: PlatformBodyProps) {
   return (
     <Body size={size} marketing={false} className={className}>
       {children}
     </Body>
   );
+}
+
+type PlatformCaptionProps = {
+  className?: string;
+  children: ReactNode;
 };
 
-export const PlatformCaption: React.FC<{
-  className?: string;
-  children: React.ReactNode;
-}> = ({ className, children }) => {
+export function PlatformCaption({
+  className,
+  children,
+}: PlatformCaptionProps) {
   return (
     <Caption marketing={false} className={className}>
       {children}
     </Caption>
   );
-};
+}
 
 export default Typography;

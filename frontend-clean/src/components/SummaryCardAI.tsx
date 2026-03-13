@@ -74,25 +74,29 @@ export default function SummaryCard({
     if (enableAI && metricKey) {
       predict(metricKey, "7d").then((prediction) => {
         if (prediction) {
-          setTrend(prediction.trend);
-          setPredictedValue(prediction.predictedValue);
+          const trendValue = prediction.trend ?? "stable";
+          const currentValue = prediction.currentValue ?? prediction.current;
+          const predictedValue = prediction.predictedValue ?? prediction.predicted;
+
+          setTrend(trendValue);
+          setPredictedValue(predictedValue);
 
           // Generate insight based on prediction
-          if (prediction.trend === "up") {
+          if (trendValue === "up") {
             setAIInsight(
               `Expected to ${
-                prediction.trend === "up" ? "increase" : "decrease"
+                trendValue === "up" ? "increase" : "decrease"
               } by ${Math.abs(
-                ((prediction.predictedValue - prediction.currentValue) /
-                  prediction.currentValue) *
+                ((predictedValue - currentValue) /
+                  currentValue) *
                   100,
               ).toFixed(1)}%`,
             );
-          } else if (prediction.trend === "down") {
+          } else if (trendValue === "down") {
             setAIInsight(
               `Trending down ${Math.abs(
-                ((prediction.predictedValue - prediction.currentValue) /
-                  prediction.currentValue) *
+                ((predictedValue - currentValue) /
+                  currentValue) *
                   100,
               ).toFixed(1)}%`,
             );

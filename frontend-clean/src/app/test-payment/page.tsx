@@ -9,6 +9,11 @@ export default function TestPaymentPage() {
   const [showEmbed, setShowEmbed] = useState(false);
   const [showWidget, setShowWidget] = useState(false);
   const [amount, setAmount] = useState(1);
+  const [orderIds] = useState(() => ({
+    button: `test_${Date.now()}`,
+    embed: `test_embed_${Date.now()}`,
+    widget: `test_widget_${Date.now()}`,
+  }));
   const [selectedComponent, setSelectedComponent] = useState<
     "embed" | "button" | "widget"
   >("embed");
@@ -207,7 +212,7 @@ export default function TestPaymentPage() {
               amount={amount}
               currency="USD"
               payCurrency="USDT"
-              orderId={`test_${Date.now()}`}
+              orderId={orderIds.button}
               description={`Test payment $${amount}`}
               onSuccess={(paymentId) => {
                 console.log("✅ Payment successful:", paymentId);
@@ -283,7 +288,7 @@ export default function TestPaymentPage() {
         amount={amount}
         currency="USD"
         payCurrency="USDT"
-        orderId={`test_embed_${Date.now()}`}
+        orderId={orderIds.embed}
         description={`Test payment $${amount}`}
         onSuccess={(paymentId) => {
           console.log("✅ Embed payment successful:", paymentId);
@@ -308,7 +313,7 @@ export default function TestPaymentPage() {
         amount={amount}
         currency="USD"
         payCurrency="USDT"
-        orderId={`test_widget_${Date.now()}`}
+        orderId={orderIds.widget}
         description={`Test payment $${amount}`}
         onSuccess={(paymentId) => {
           console.log("✅ Widget payment successful:", paymentId);

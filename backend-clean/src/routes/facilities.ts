@@ -5,6 +5,11 @@ import { logger } from "../lib/logger";
 
 const router = Router();
 
+function paramToString(value: unknown): string {
+  if (Array.isArray(value)) return String(value[0] ?? "");
+  return String(value ?? "");
+}
+
 // All routes require authentication
 router.use(authenticate);
 
@@ -33,7 +38,6 @@ router.get("/", async (req: AuthRequest, res: Response) => {
         contactPerson: true,
         email: true,
         phone: true,
-        status: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -79,7 +83,7 @@ router.get("/", async (req: AuthRequest, res: Response) => {
  */
 router.get("/:id", async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = paramToString(req.params.id);
 
     const facility = await prisma.medicalFacility.findUnique({
       where: { id },
@@ -138,7 +142,6 @@ router.post("/", async (req: AuthRequest, res: Response) => {
       contactPerson,
       email,
       phone,
-      description,
     } = req.body;
 
     // Validate required fields
@@ -157,10 +160,14 @@ router.post("/", async (req: AuthRequest, res: Response) => {
         state,
         zipCode: zipCode || "",
         contactPerson: contactPerson || "",
-        email: email || "",
+        email: email || null,
         phone: phone || "",
-        description: description || "",
-        status: "ACTIVE",
+        generalPrice: 0,
+        icuPrice: 0,
+        emergencyPrice: 0,
+        maternityPrice: 0,
+        pediatricPrice: 0,
+        surgicalPrice: 0,
         isActive: true,
       },
     });
@@ -180,7 +187,7 @@ router.post("/", async (req: AuthRequest, res: Response) => {
  */
 router.put("/:id", async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = paramToString(req.params.id);
     const {
       name,
       address,
@@ -190,8 +197,6 @@ router.put("/:id", async (req: AuthRequest, res: Response) => {
       contactPerson,
       email,
       phone,
-      description,
-      status,
     } = req.body;
 
     const facility = await prisma.medicalFacility.findUnique({
@@ -214,8 +219,6 @@ router.put("/:id", async (req: AuthRequest, res: Response) => {
         ...(contactPerson !== undefined && { contactPerson }),
         ...(email !== undefined && { email }),
         ...(phone !== undefined && { phone }),
-        ...(description !== undefined && { description }),
-        ...(status && { status }),
       },
     });
 
@@ -234,7 +237,7 @@ router.put("/:id", async (req: AuthRequest, res: Response) => {
  */
 router.delete("/:id", async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = paramToString(req.params.id);
 
     const facility = await prisma.medicalFacility.findUnique({
       where: { id },
@@ -250,7 +253,6 @@ router.delete("/:id", async (req: AuthRequest, res: Response) => {
       where: { id },
       data: {
         isActive: false,
-        status: "INACTIVE",
       },
     });
 
@@ -268,7 +270,7 @@ router.delete("/:id", async (req: AuthRequest, res: Response) => {
  */
 router.get("/:id/stats", async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = paramToString(req.params.id);
 
     const facility = await prisma.medicalFacility.findUnique({
       where: { id },

@@ -56,17 +56,17 @@ export default function TaskCard({ task }: TaskCardProps) {
               <span>{task.estimatedHours}h</span>
             </div>
           )}
-          {task._count?.comments && task._count.comments > 0 && (
+          {Array.isArray(task.metadata?.comments) && task.metadata.comments.length > 0 && (
             <div className="flex items-center gap-1">
               <MessageSquare className="w-3 h-3" />
-              <span>{task._count.comments}</span>
+              <span>{task.metadata.comments.length}</span>
             </div>
           )}
         </div>
-        {task.assignee && (
+        {task.assigneeId && (
           <div className="flex items-center gap-1">
             <User className="w-3 h-3" />
-            <span className="text-xs">{task.assignee.username}</span>
+            <span className="text-xs">Assigned</span>
           </div>
         )}
       </div>

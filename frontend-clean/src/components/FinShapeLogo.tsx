@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 
 interface FinShapeLogoProps {
   size?: "sm" | "md" | "lg" | "xl";
@@ -29,7 +29,7 @@ export default function FinShapeLogo({
   showText = true,
   className = "",
 }: FinShapeLogoProps) {
-  const logoVariants = {
+  const logoVariants: Variants = {
     initial: { scale: 0.8, opacity: 0 },
     animate: {
       scale: 1,
@@ -47,7 +47,7 @@ export default function FinShapeLogo({
     },
   };
 
-  const shapeVariants = {
+  const shapeVariants: Variants = {
     initial: { pathLength: 0, opacity: 0 },
     animate: {
       pathLength: 1,
@@ -59,7 +59,7 @@ export default function FinShapeLogo({
     },
   };
 
-  const textVariants = {
+  const textVariants: Variants = {
     initial: { x: -20, opacity: 0 },
     animate: {
       x: 0,

@@ -292,7 +292,17 @@ export default function DebuggingInfrastructurePlan() {
   };
 
   const getImplementationPriority = () => {
-    const allComponents = [];
+    const allComponents: Array<{
+      section: string;
+      sectionTitle: string;
+      priority: string;
+      name: string;
+      description: string;
+      tools: string[];
+      implementation: string;
+      estimatedTime: string;
+      complexity: string;
+    }> = [];
     Object.entries(infrastructure).forEach(([key, section]) => {
       section.components.forEach((comp) => {
         allComponents.push({

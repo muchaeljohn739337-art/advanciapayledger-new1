@@ -125,7 +125,7 @@ export function AdaptiveDashboard() {
     if (!profile) return 0;
     
     const totalPossible = 12; // Approximate total challenges
-    return Math.round((profile.adaptations.completed.length / totalPossible) * 100);
+    return Math.round((profile.learningPath.completed.length / totalPossible) * 100);
   };
 
   if (loading) {
@@ -196,7 +196,7 @@ export function AdaptiveDashboard() {
               <div>
                 <h3 className="text-lg font-semibold">Challenges</h3>
                 <p className="text-2xl font-bold text-gray-900">
-                  {profile?.adaptations.completed.length || 0}
+                  {profile?.learningPath.completed.length || 0}
                 </p>
               </div>
             </div>

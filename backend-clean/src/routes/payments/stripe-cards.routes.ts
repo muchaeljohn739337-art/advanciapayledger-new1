@@ -6,6 +6,11 @@ import prisma from '../../lib/prisma';
 
 const router = Router();
 
+function paramToString(value: unknown): string {
+  if (Array.isArray(value)) return String(value[0] ?? '');
+  return String(value ?? '');
+}
+
 /**
  * Create virtual card
  * POST /api/payments/stripe-cards/create
@@ -175,7 +180,7 @@ router.post('/fund', authenticate, async (req: AuthRequest, res) => {
  */
 router.get('/:cardId', authenticate, async (req: AuthRequest, res) => {
   try {
-    const { cardId } = req.params;
+    const cardId = paramToString(req.params.cardId);
     const userId = req.user?.userId;
 
     if (!userId) {
@@ -259,7 +264,7 @@ router.post('/:cardId/status', authenticate, async (req: AuthRequest, res) => {
       return res.status(503).json({ error: 'Stripe is not configured' });
     }
 
-    const { cardId } = req.params;
+    const cardId = paramToString(req.params.cardId);
     const { active } = req.body;
     const userId = req.user?.userId;
 
@@ -306,7 +311,7 @@ router.get('/:cardId/transactions', authenticate, async (req: AuthRequest, res) 
       return res.status(503).json({ error: 'Stripe is not configured' });
     }
 
-    const { cardId } = req.params;
+    const cardId = paramToString(req.params.cardId);
     const userId = req.user?.userId;
 
     if (!userId) {

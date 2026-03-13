@@ -46,8 +46,8 @@ export default function TradingChart() {
   const [timeframe, setTimeframe] = useState('1D');
 
   const generateChartData = () => {
-    const labels = [];
-    const data = [];
+    const labels: string[] = [];
+    const data: number[] = [];
     const basePrice = 42000;
     
     for (let i = 0; i < 30; i++) {

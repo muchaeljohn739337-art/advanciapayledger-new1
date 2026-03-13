@@ -1060,7 +1060,9 @@ Goal: Win-back with proof of improvement
             Categories
           </h2>
           <div className="flex flex-wrap gap-2">
-            {Object.entries(currentContent.categories).map(([key, cat]) => (
+            {Object.entries(currentContent.categories).map(([key, cat]) => {
+              const category = cat as { name: string };
+              return (
               <button
                 key={key}
                 onClick={() => setSelectedCategory(key)}
@@ -1070,9 +1072,10 @@ Goal: Win-back with proof of improvement
                     : "border-slate-200 text-slate-700 hover:border-slate-300"
                 }`}
               >
-                {cat.name}
+                {category.name}
               </button>
-            ))}
+              );
+            })}
           </div>
         </div>
 

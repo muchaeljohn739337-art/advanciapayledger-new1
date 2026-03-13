@@ -365,18 +365,17 @@ router.post("/webhook", async (req: Request, res: Response) => {
               where: { txHash: payment_id },
               update: {
                 status: "FAILED",
-                metadata: event,
               },
               create: {
+                userId: wallet.userId,
                 walletId: wallet.id,
+                chain: pay_currency || price_currency || "UNKNOWN",
+                fromAddress: "external",
+                toAddress: pay_address || wallet.cryptoAddress || wallet.ethereumAddress,
                 amount: parseFloat(price_amount || "0"),
                 currency: price_currency || "USD",
-                payCurrency: pay_currency,
-                payAmount: parseFloat(pay_amount || "0"),
                 txHash: payment_id,
                 status: "FAILED",
-                orderId: order_id,
-                metadata: event,
               },
             });
           }
@@ -399,20 +398,18 @@ router.post("/webhook", async (req: Request, res: Response) => {
               update: {
                 status: "CONFIRMING",
                 confirmations: 1,
-                metadata: event,
               },
               create: {
+                userId: wallet.userId,
                 walletId: wallet.id,
+                chain: pay_currency || price_currency || "UNKNOWN",
+                fromAddress: "external",
+                toAddress: pay_address || wallet.cryptoAddress || wallet.ethereumAddress,
                 amount: parseFloat(price_amount || "0"),
                 currency: price_currency || "USD",
-                payCurrency: pay_currency,
-                payAmount: parseFloat(pay_amount || "0"),
                 txHash: payment_id,
                 status: "CONFIRMING",
                 confirmations: 1,
-                orderId: order_id,
-                payAddress: pay_address,
-                metadata: event,
               },
             });
           }

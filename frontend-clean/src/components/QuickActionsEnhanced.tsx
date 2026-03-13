@@ -33,7 +33,8 @@ export default function QuickActions() {
     const enteredAmount = amount || prompt("Enter amount to add (USD):", "50");
     if (!enteredAmount) return;
 
-    const parsedAmount = parseFloat(enteredAmount);
+    const parsedAmount =
+      typeof enteredAmount === "number" ? enteredAmount : parseFloat(enteredAmount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
       alert("Please enter a valid amount");
       return;
@@ -445,11 +446,15 @@ export default function QuickActions() {
               <div className="text-center">
                 <button
                   onClick={() => {
-                    const fromCurrency =
-                      document.getElementById("fromCurrency").value;
-                    const toCurrency =
-                      document.getElementById("toCurrency").value;
-                    const amount = document.getElementById("amount").value;
+                    const fromCurrency = (
+                      document.getElementById("fromCurrency") as HTMLInputElement | null
+                    )?.value;
+                    const toCurrency = (
+                      document.getElementById("toCurrency") as HTMLInputElement | null
+                    )?.value;
+                    const amount = (
+                      document.getElementById("amount") as HTMLInputElement | null
+                    )?.value;
                     handleExchange(fromCurrency, toCurrency, amount);
                   }}
                   className="bg-blue-600 text-white rounded-lg px-4 py-2 hover:bg-blue-700"

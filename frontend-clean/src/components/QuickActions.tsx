@@ -3,7 +3,79 @@
 import { useSmartSuggestions } from "@/hooks/useSmartSuggestions";
 import { SmartRecommendation } from "@/lib/ai-brain/ai-core.types";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
+
+type QuickActionItem = {
+  title: string;
+  description: string;
+  icon: string;
+  href: string;
+  color: string;
+  priority: number;
+  featured?: boolean;
+  aiRecommended?: boolean;
+};
+
+const defaultActions: QuickActionItem[] = [
+  {
+    title: "AI Generator",
+    description: "Generate text, code & images with AI",
+    icon: "✨",
+    href: "/ai-generator",
+    color:
+      "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600",
+    featured: true,
+    priority: 10,
+  },
+  {
+    title: "Buy Crypto",
+    description: "Purchase cryptocurrency with USD",
+    icon: "🛒",
+    href: "/crypto/buy",
+    color: "bg-green-500 hover:bg-green-600",
+    priority: 8,
+  },
+  {
+    title: "Withdraw Crypto",
+    description: "Send crypto to external wallet",
+    icon: "📤",
+    href: "/crypto/withdraw",
+    color: "bg-blue-500 hover:bg-blue-600",
+    priority: 7,
+  },
+  {
+    title: "Transfer Tokens",
+    description: "Send tokens to another user",
+    icon: "💸",
+    href: "/tokens/transfer",
+    color: "bg-purple-500 hover:bg-purple-600",
+    priority: 6,
+  },
+  {
+    title: "Deposit USD",
+    description: "Add funds to your account",
+    icon: "💳",
+    href: "/payments/topup",
+    color: "bg-indigo-500 hover:bg-indigo-600",
+    priority: 5,
+  },
+  {
+    title: "View Orders",
+    description: "Track crypto purchase orders",
+    icon: "📋",
+    href: "/crypto/orders",
+    color: "bg-orange-500 hover:bg-orange-600",
+    priority: 4,
+  },
+  {
+    title: "Transaction History",
+    description: "View all your transactions",
+    icon: "📊",
+    href: "/transactions",
+    color: "bg-pink-500 hover:bg-pink-600",
+    priority: 3,
+  },
+];
 
 /**
  * AI-Enhanced Quick Actions
@@ -14,94 +86,26 @@ import { useEffect, useState } from "react";
  */
 export default function QuickActions() {
   const { suggestions, loading } = useSmartSuggestions("quick-actions");
-  const [orderedActions, setOrderedActions] = useState<any[]>([]);
 
-  const defaultActions = [
-    {
-      title: "AI Generator",
-      description: "Generate text, code & images with AI",
-      icon: "✨",
-      href: "/ai-generator",
-      color:
-        "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600",
-      featured: true,
-      priority: 10,
-    },
-    {
-      title: "Buy Crypto",
-      description: "Purchase cryptocurrency with USD",
-      icon: "🛒",
-      href: "/crypto/buy",
-      color: "bg-green-500 hover:bg-green-600",
-      priority: 8,
-    },
-    {
-      title: "Withdraw Crypto",
-      description: "Send crypto to external wallet",
-      icon: "📤",
-      href: "/crypto/withdraw",
-      color: "bg-blue-500 hover:bg-blue-600",
-      priority: 7,
-    },
-    {
-      title: "Transfer Tokens",
-      description: "Send tokens to another user",
-      icon: "💸",
-      href: "/tokens/transfer",
-      color: "bg-purple-500 hover:bg-purple-600",
-      priority: 6,
-    },
-    {
-      title: "Deposit USD",
-      description: "Add funds to your account",
-      icon: "💳",
-      href: "/payments/topup",
-      color: "bg-indigo-500 hover:bg-indigo-600",
-      priority: 5,
-    },
-    {
-      title: "View Orders",
-      description: "Track crypto purchase orders",
-      icon: "📋",
-      href: "/crypto/orders",
-      color: "bg-orange-500 hover:bg-orange-600",
-      priority: 4,
-    },
-    {
-      title: "Transaction History",
-      description: "View all your transactions",
-      icon: "📊",
-      href: "/transactions",
-      color: "bg-pink-500 hover:bg-pink-600",
-      priority: 3,
-    },
-  ];
-
-  // Apply AI recommendations to reorder actions
-  useEffect(() => {
-    if (suggestions.length > 0) {
-      const actionsCopy = [...defaultActions];
-
-      // Boost priority of AI-recommended actions
-      suggestions.forEach((suggestion: SmartRecommendation) => {
-        const matchingAction = actionsCopy.find(
-          (action) => action.href === suggestion.quickAction?.route,
-        );
-        if (matchingAction) {
-          matchingAction.priority += suggestion.priority * 2;
-          matchingAction.aiRecommended = true;
-        }
-      });
-
-      // Sort by priority
-      actionsCopy.sort((a, b) => b.priority - a.priority);
-      setOrderedActions(actionsCopy);
-    } else {
-      setOrderedActions(defaultActions);
+  const actions = useMemo(() => {
+    if (suggestions.length === 0) {
+      return defaultActions;
     }
-  }, [suggestions]);
 
-  const actions = orderedActions.length > 0 ? orderedActions : defaultActions;
+    const actionsCopy = defaultActions.map((action) => ({ ...action }));
+
+    suggestions.forEach((suggestion: SmartRecommendation) => {
+      const matchingAction = actionsCopy.find(
+        (action) => action.href === suggestion.quickAction?.route,
+      );
+      if (matchingAction) {
+        matchingAction.priority += suggestion.priority * 2;
+        matchingAction.aiRecommended = true;
+      }
+    });
+
+    return actionsCopy.sort((a, b) => b.priority - a.priority);
+  }, [defaultActions, suggestions]);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">

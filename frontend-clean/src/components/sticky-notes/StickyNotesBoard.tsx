@@ -14,7 +14,7 @@ interface Note {
   zIndex: number;
   isPinned: boolean;
   tags: string[];
-  createdBy: { id: string; name: string; email: string };
+  createdBy?: { id?: string; name: string; email?: string };
   createdAt: string;
   updatedAt: string;
 }

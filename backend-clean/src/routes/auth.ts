@@ -391,7 +391,9 @@ router.post("/reset-password", async (req: Request, res: Response) => {
 // Verify email
 router.get("/verify-email/:token", async (req: Request, res: Response) => {
   try {
-    const { token } = req.params;
+    const token = Array.isArray(req.params.token)
+      ? req.params.token[0]
+      : req.params.token;
 
     if (!token) {
       res.status(400).json({ error: "Verification token is required" });

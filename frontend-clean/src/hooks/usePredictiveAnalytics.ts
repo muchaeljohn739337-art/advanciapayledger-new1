@@ -25,8 +25,22 @@ export function usePredictiveAnalytics() {
       setError(null);
       try {
         const prediction = await predictMetric(metric, timeframe);
-        setPredictions((prev) => new Map(prev).set(metric, prediction));
-        return prediction;
+        const currentValue = prediction.currentValue ?? prediction.current;
+        const predictedValue = prediction.predictedValue ?? prediction.predicted;
+        const normalizedPrediction: PredictiveAnalysis = {
+          ...prediction,
+          currentValue,
+          predictedValue,
+          trend:
+            prediction.trend ??
+            (predictedValue > currentValue
+              ? "up"
+              : predictedValue < currentValue
+                ? "down"
+                : "stable"),
+        };
+        setPredictions((prev) => new Map(prev).set(metric, normalizedPrediction));
+        return normalizedPrediction;
       } catch (err) {
         const errorMsg =
           err instanceof Error ? err.message : "Prediction failed";
@@ -44,8 +58,23 @@ export function usePredictiveAnalytics() {
     setError(null);
     try {
       const forecast = await getRevenueForecast(days);
-      setRevenueForecast(forecast);
-      return forecast;
+      const values = Array.isArray(forecast.forecast) ? forecast.forecast : [];
+      const realistic = values[values.length - 1] ?? 0;
+      const normalizedForecast: RevenueForecast = {
+        ...forecast,
+        scenarios: forecast.scenarios ?? {
+          optimistic: Math.round(realistic * 1.1),
+          realistic,
+          pessimistic: Math.round(realistic * 0.9),
+        },
+        factors: forecast.factors ?? {
+          seasonality: 0.35,
+          trend: 0.45,
+          external: 0.2,
+        },
+      };
+      setRevenueForecast(normalizedForecast);
+      return normalizedForecast;
     } catch (err) {
       const errorMsg =
         err instanceof Error ? err.message : "Revenue forecast failed";

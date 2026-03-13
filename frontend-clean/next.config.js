@@ -2,10 +2,6 @@ const nextConfig = {
   reactStrictMode: true,
   productionBrowserSourceMaps: false,
 
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-
   // Environment variables
   env: {
     NEXT_PUBLIC_API_URL:

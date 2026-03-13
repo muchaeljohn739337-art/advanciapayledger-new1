@@ -497,17 +497,17 @@ export class AdminAnalyticsService {
 
       const [activeUsers, totalUsers] = await Promise.all([
         prisma.userActivityLog
-          .groupBy({
-            by: ["userId"],
+          .findMany({
             where: {
-              timestamp: {
+              createdAt: {
                 gte: dayStart,
                 lte: dayEnd,
               },
             },
-            _count: { userId: true },
+            distinct: ["userId"],
+            select: { userId: true },
           })
-          .then((logs: any) => logs.length),
+          .then((logs) => logs.length),
         prisma.user.count({
           where: {
             createdAt: {
